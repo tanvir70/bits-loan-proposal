@@ -10,8 +10,23 @@ public final class LoanProposalEventMapper {
         long version = loanProposal.getVersion() == null ? 0L : loanProposal.getVersion();
         return new LoanProposalCreatedEvent(
             loanProposal.id(),
-            loanProposal.getApplicantName(),
-            loanProposal.getAmount(),
+            loanProposal.getLoanProposalId(),
+            loanProposal.getProposalNumber(),
+            loanProposal.getBranchId(),
+            loanProposal.getBranchCode(),
+            loanProposal.getProjectId(),
+            loanProposal.getMemberId(),
+            loanProposal.getLoanProductId(),
+            loanProposal.getProposedLoanAmount(),
+            loanProposal.getApprovedLoanAmount(),
+            loanProposal.getLoanProposalStatus(),
+            loanProposal.getDataSource(),
+            loanProposal.getDomainStatus(),
+            loanProposal.getIsDigitalDisbursement(),
+            loanProposal.getNominees(),
+            loanProposal.getFireInsuranceDetails(),
+            loanProposal.getModeOfPayment(),
+            loanProposal.getApplicationDate(),
             version,
             loanProposal.getTracerId()
         );

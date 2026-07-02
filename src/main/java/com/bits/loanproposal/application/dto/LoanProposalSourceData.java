@@ -1,6 +1,6 @@
 package com.bits.loanproposal.application.dto;
 
-import com.bits.loanproposal.application.dto.sourcedata.ClientInfo;
+import com.bits.loanproposal.application.dto.sourcedata.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -13,5 +13,16 @@ import lombok.Setter;
 @NoArgsConstructor
 @AllArgsConstructor
 public class LoanProposalSourceData {
-    private ClientInfo clientInfo;
+    private Member member;
+    private LoanProduct loanProduct;
+    private LoanProductDetails loanProductDetails;
+    private LoanProductPolicy loanProductPolicy;
+    private Scheme scheme;
+    private Project project;
+    private ProjectPolicy projectPolicy;
+    private Branch branch;
+    private VillageOrganisation villageOrganisation;
+    private InsuranceProduct insuranceProduct;
+    private Country country;
+    private Bank bank;
 }
