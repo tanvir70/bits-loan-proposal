@@ -2,10 +2,10 @@ package com.bits.loanproposal.application.commandhandler;
 
 import com.bits.ddd.annotation.PersistDomain;
 import com.bits.ddd.annotation.RegisterCommandHandler;
-import com.bits.ddd.application.handler.CommandHandler;
-import com.bits.ddd.application.service.MessageProcessor;
-import com.bits.ddd.application.service.SourceDataContext;
-import com.bits.ddd.infra.persistence.service.DomainPersistenceService;
+import com.bits.ddd.handler.CommandHandler;
+import com.bits.ddd.service.MessageProcessor;
+import com.bits.ddd.service.SourceDataContext;
+import com.bits.ddd.service.DomainPersistenceService;
 import com.bits.ddd.shared.exception.domain.DomainValidationException;
 import com.bits.loanproposal.application.command.CreateLoanProposalCommand;
 import com.bits.loanproposal.application.dto.LoanProposalSourceData;

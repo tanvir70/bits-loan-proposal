@@ -1,6 +1,6 @@
 package com.bits.loanproposal.application.mapper;
 
-import com.bits.ddd.application.service.SourceDataContext;
+import com.bits.ddd.service.SourceDataContext;
 import com.bits.loanproposal.application.dto.LoanProposalSourceData;
 import com.bits.loanproposal.infrastructure.persistence.document.sourcedata.*;
 

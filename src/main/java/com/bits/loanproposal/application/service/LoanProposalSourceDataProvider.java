@@ -1,9 +1,10 @@
 package com.bits.loanproposal.application.service;
 
-import com.bits.ddd.application.service.SourceDataContext;
-import com.bits.ddd.application.service.SourceDataCoordinator;
-import com.bits.ddd.application.service.SourceDataProvider;
+import com.bits.ddd.service.SourceDataContext;
+import com.bits.ddd.service.SourceDataCoordinator;
+import com.bits.ddd.service.SourceDataProvider;
 import com.bits.ddd.shared.exception.domain.DomainValidationException;
+import com.bits.ddd.shared.exception.domain.SourceDataValidationException;
 import com.bits.ddd.shared.localization.LocalizedMessage;
 import com.bits.loanproposal.application.command.CreateLoanProposalCommand;
 import com.bits.loanproposal.infrastructure.persistence.repository.repository.*;
@@ -107,9 +108,6 @@ public class LoanProposalSourceDataProvider implements SourceDataProvider<Create
                     LocalizedMessage.builder().key("BANK_NOT_FOUND").build());
         }
 
-        return builder.fetch(errors -> new DomainValidationException(
-                "SOURCE_DATA_ERROR",
-                errors.toString()
-        ));
+        return builder.fetch(SourceDataValidationException::new);
     }
 }

@@ -1,6 +1,6 @@
 package com.bits.loanproposal.domain.aggregate;
 
-import com.bits.ddd.domain.aggregate.AggregateRoot;
+import com.bits.ddd.aggregate.AggregateRoot;
 import com.bits.loanproposal.domain.enums.*;
 import com.bits.loanproposal.domain.entity.*;
 import com.bits.loanproposal.domain.valueobject.*;

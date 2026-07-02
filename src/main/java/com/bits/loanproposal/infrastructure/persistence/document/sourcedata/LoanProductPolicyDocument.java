@@ -1,7 +1,7 @@
 package com.bits.loanproposal.infrastructure.persistence.document.sourcedata;
 
 import com.bits.ddd.annotation.MongoSourceData;
-import com.bits.ddd.domain.sourcedata.SourceData;
+import com.bits.ddd.dto.SourceData;
 import com.bits.loanproposal.application.dto.sourcedata.LoanProductPolicy;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
