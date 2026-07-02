@@ -12,3 +12,6 @@ Always apply the following rules when working on the `bits-loan-proposal-command
 * **Distributed System Constraints**: Always keep in mind for distribution system, multiple instane and DR:
   * Use distributed locks (e.g., Redis/Redisson) rather than in-memory concurrency locks (`ConcurrentHashMap`) to support scaling to multiple instances safely.
   * Ensure idempotent command handling and message consumption to prevent duplicate operations in a multi-instance topology.
+
+## Git and Workflow Constraints
+* **Ask Before Push**: Always ask the user for explicit approval before running any `git push` commands.
