@@ -260,7 +260,7 @@ public class LoanProposal extends AggregateRoot<String> {
         proposal.approvalLogId = creationData.approvalLogId();
         proposal.changeLogId = creationData.changeLogId();
 
-        proposal.addEvent(LoanProposalEventMapper.toCreatedEvent(proposal));
+        proposal.addEvent(LoanProposalEventMapper.INSTANCE.toCreatedEvent(proposal));
         return proposal;
     }
 

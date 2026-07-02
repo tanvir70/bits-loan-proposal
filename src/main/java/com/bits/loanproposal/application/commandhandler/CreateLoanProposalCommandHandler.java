@@ -26,16 +26,19 @@ public class CreateLoanProposalCommandHandler implements CommandHandler<CreateLo
     private final LoanProposalSourceDataProvider sourceDataProvider;
     private final MessageProcessor messageProcessor;
     private final LoanProposalRepository repository;
+    private final LoanProposalDataMapper dataMapper;
 
     public CreateLoanProposalCommandHandler(
             DomainPersistenceService<LoanProposal, String> persistenceService,
             LoanProposalSourceDataProvider sourceDataProvider,
             MessageProcessor messageProcessor,
-            LoanProposalRepository repository) {
+            LoanProposalRepository repository,
+            LoanProposalDataMapper dataMapper) {
         this.persistenceService = persistenceService;
         this.sourceDataProvider = sourceDataProvider;
         this.messageProcessor = messageProcessor;
         this.repository = repository;
+        this.dataMapper = dataMapper;
     }
 
     @Override
@@ -53,7 +56,7 @@ public class CreateLoanProposalCommandHandler implements CommandHandler<CreateLo
         LoanProposalSourceData sourceData = LoanProposalSourceDataMapper.toSourceData(context);
         
         // 3. Map to parameters and create aggregate
-        LoanProposalCreationData creationData = LoanProposalDataMapper.toCreationData(command, sourceData);
+        LoanProposalCreationData creationData = dataMapper.toCreationData(command, sourceData);
         LoanProposal loanProposal = LoanProposal.create(creationData);
         
         // 4. Persist and publish events

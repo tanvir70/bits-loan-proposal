@@ -2,11 +2,17 @@ package com.bits.loanproposal.domain.mapper;
 
 import com.bits.loanproposal.domain.aggregate.LoanProposal;
 import com.bits.loanproposal.domain.event.LoanProposalCreatedEvent;
+import org.mapstruct.Mapper;
+import org.mapstruct.factory.Mappers;
 
-public final class LoanProposalEventMapper {
-    private LoanProposalEventMapper() {}
+@Mapper(componentModel = "spring")
+public interface LoanProposalEventMapper {
+    LoanProposalEventMapper INSTANCE = Mappers.getMapper(LoanProposalEventMapper.class);
 
-    public static LoanProposalCreatedEvent toCreatedEvent(LoanProposal loanProposal) {
+    default LoanProposalCreatedEvent toCreatedEvent(LoanProposal loanProposal) {
+        if (loanProposal == null) {
+            return null;
+        }
         long version = loanProposal.getVersion() == null ? 0L : loanProposal.getVersion();
         return new LoanProposalCreatedEvent(
             loanProposal.id(),

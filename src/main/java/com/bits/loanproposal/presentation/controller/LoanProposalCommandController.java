@@ -16,9 +16,11 @@ import org.springframework.web.bind.annotation.*;
 public class LoanProposalCommandController {
 
     private final CommandBus commandBus;
+    private final LoanProposalCommandMapper commandMapper;
 
-    public LoanProposalCommandController(CommandBus commandBus) {
+    public LoanProposalCommandController(CommandBus commandBus, LoanProposalCommandMapper commandMapper) {
         this.commandBus = commandBus;
+        this.commandMapper = commandMapper;
     }
 
     @PostMapping
@@ -30,7 +32,7 @@ public class LoanProposalCommandController {
             tracerId = UUID.randomUUID().toString();
         }
         
-        CreateLoanProposalCommand command = LoanProposalCommandMapper.toCreateCommand(tracerId, request);
+        CreateLoanProposalCommand command = commandMapper.toCreateCommand(tracerId, request);
         commandBus.handle(command);
         
         return ResponseEntity.status(HttpStatus.ACCEPTED)

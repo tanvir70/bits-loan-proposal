@@ -6,264 +6,57 @@ import com.bits.loanproposal.domain.entity.*;
 import com.bits.loanproposal.domain.valueobject.*;
 import com.bits.loanproposal.domain.param.LoanProposalCreationData;
 import com.bits.loanproposal.presentation.controller.dto.*;
+import org.mapstruct.Mapper;
+import org.mapstruct.Mapping;
 
-import java.math.BigDecimal;
-import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.stream.Collectors;
+@Mapper(componentModel = "spring")
+public interface LoanProposalDataMapper {
 
-public final class LoanProposalDataMapper {
+    @Mapping(target = "traceId", source = "command.tracerId")
+    @Mapping(target = "branchCode", source = "sourceData.branch.code")
+    @Mapping(target = "projectCode", source = "sourceData.project.code")
+    @Mapping(target = "villageOrganisationCode", source = "sourceData.villageOrganisation.code")
+    @Mapping(target = "isDigitalDisbursement", expression = "java(deriveIsDigital(command))")
+    @Mapping(target = "transactionDescription", expression = "java(deriveTransactionDescription(command, sourceData))")
+    @Mapping(target = "recalculatedInstallmentAmount", source = "command.installmentAmount")
+    @Mapping(target = "guarantors", expression = "java(java.util.Collections.emptyList())")
+    @Mapping(target = "loanProposalId", ignore = true)
+    @Mapping(target = "proposalNumber", ignore = true)
+    @Mapping(target = "premiumAmount", ignore = true)
+    @Mapping(target = "applicationDate", expression = "java(java.time.LocalDate.now())")
+    LoanProposalCreationData toCreationData(CreateLoanProposalCommand command, LoanProposalSourceData sourceData);
 
-    private LoanProposalDataMapper() {}
-
-    public static LoanProposalCreationData toCreationData(CreateLoanProposalCommand command, LoanProposalSourceData sourceData) {
-        String branchCode = sourceData.getBranch() != null ? sourceData.getBranch().getCode() : null;
-        String projectCode = sourceData.getProject() != null ? sourceData.getProject().getCode() : null;
-        String voCode = sourceData.getVillageOrganisation() != null ? sourceData.getVillageOrganisation().getCode() : null;
-        
-        // Derive digital disbursement flag and description
-        boolean isDigital = command.getModeOfPayment() != null && 
+    default boolean deriveIsDigital(CreateLoanProposalCommand command) {
+        return command.getModeOfPayment() != null && 
                 (command.getModeOfPayment().digitalDisbursementModeId() != null || 
                  command.getModeOfPayment().rocketWalletNumber() != null || 
                  command.getModeOfPayment().bkashWalletNumber() != null);
-
-        String txDesc = isDigital ? String.format("OTC-%s-%s-%s", branchCode, voCode, command.getMemberId()) : null;
-
-        return new LoanProposalCreationData(
-            command.getId(),
-            command.getTracerId(),
-            null, // loanProposalId
-            null, // proposalNumber
-            command.getProposalReferenceNumber(),
-            command.getBranchId(),
-            branchCode,
-            command.getProjectId(),
-            projectCode,
-            command.getVillageOrganisationId(),
-            voCode,
-            command.getMemberId(),
-            command.getMemberClassificationId(),
-            command.getLoanProductId(),
-            command.getLoanProductDetailsId(),
-            command.getLoanProductPolicyId(),
-            command.getSchemeId(),
-            command.getSectorId(),
-            command.getSubSectorId(),
-            command.getFrequencyId(),
-            command.getProposedLoanAmount(),
-            command.getProposedGrantAmount(),
-            command.getApprovedGrantAmount(),
-            command.getPreProposedLoanAmount(),
-            command.getInterestRate(),
-            command.getNumberOfInstallments(),
-            command.getInstallmentAmount(),
-            command.getInstallmentAmount(), // recalculatedInstallmentAmount defaults to supplied
-            command.getProposalDurationInMonths(),
-            command.getLoanProposalType(),
-            command.getMicroInsurance(),
-            command.getPolicyTypeId(),
-            command.getInsuranceProductId(),
-            null, // premiumAmount is calculated/looked up
-            mapSecondInsurer(command.getSecondInsurer()),
-            command.getWantsFireInsurance(),
-            command.getFireInsuranceProductId(),
-            mapFireInsuranceDetails(command.getFireInsuranceDetails()),
-            mapModeOfPayment(command.getModeOfPayment()),
-            mapAutoDebitCollection(command.getAutoDebitCollection()),
-            isDigital,
-            txDesc,
-            mapNominees(command.getNominees()),
-            mapGuardian(command.getGuardian()),
-            mapCoBorrower(command.getCoBorrower()),
-            Collections.emptyList(), // guarantors
-            command.getSpecialSavingsAccountIds(),
-            command.getSpecialSavingsAccountNumbers(),
-            command.getCountryId(),
-            command.getLoanApproverId(),
-            command.getTotalPovertyScore(),
-            command.getFieldOfficerId(),
-            command.getLoanSecurityAmount(),
-            command.getLoanSecurityBalance(),
-            command.getSpousePrimaryIncomeSource(),
-            command.getSpouseSecondaryIncomeSource(),
-            command.getFirstChildName(),
-            command.getSecondChildName(),
-            command.getLargeGroupLeaderName(),
-            command.getLargeGroupLeaderImage(),
-            LocalDate.now(), // applicationDate default
-            command.getDisbursementDate(),
-            command.getVoDisbursementDate(),
-            command.getFirstRepaymentDate(),
-            command.getApprovalCode(),
-            command.getTransactionNumber(),
-            command.getScannedFileName(),
-            command.getFlag(),
-            command.getCohortMappingId(),
-            command.getAssetPurchaseId(),
-            command.getDisbursementSubStatus(),
-            command.getLongitude(),
-            command.getLatitude(),
-            command.getReasonForLoan(),
-            command.getNumberOfChildGoToSchool(),
-            command.getNoOfPreviousLoanFromBrac(),
-            command.getRcaEnabled(),
-            command.getMemberMobileNumber(),
-            command.getAddress(),
-            command.getContactNo(),
-            command.getVoLeaderId(),
-            command.getVoLeaderName(),
-            command.getSpouseContactNumber(),
-            command.getEarner(),
-            command.getOwnIncome(),
-            command.getLoanUser(),
-            command.getAgeType(),
-            command.getIsNewInsurer(),
-            command.getLoanRecommenderId(),
-            command.getDisbursementRetryCount(),
-            command.getDisbursedBy(),
-            command.getBmNotVerifiedDisbursementReason(),
-            command.getLoanAccountFound(),
-            command.getDigitalDisbursementStatusId(),
-            command.getDigitalDisbursementHoApprovalDate(),
-            command.getDigitalDisbursementSignConsent(),
-            command.getDigitalDisbursementBankInstructionDate(),
-            command.getDigitalDisbursementHoApprovalBy(),
-            command.getLoanReferrerName(),
-            command.getLoanReferrerContactNo(),
-            command.getVoToSpotDistanceInstruction(),
-            command.getRejectionReason(),
-            command.getSignConsent(),
-            command.getConsentUrl(),
-            mapProgotiDocumentChecklist(command.getProgotiDocumentChecklist()),
-            command.getLoanAccountId(),
-            command.getDisbursedAmount(),
-            command.getApprovalLogId(),
-            command.getChangeLogId()
-        );
     }
 
-    private static List<Nominee> mapNominees(List<NomineeRequestDto> dtos) {
-        if (dtos == null) return new ArrayList<>();
-        return dtos.stream().map(dto -> Nominee.builder()
-            .id(dto.id())
-            .name(dto.name())
-            .relationshipId(dto.relationshipId())
-            .sharePercentage(dto.sharePercentage())
-            .insuranceTypes(dto.insuranceTypes())
-            .build()
-        ).collect(Collectors.toList());
+    default String deriveTransactionDescription(CreateLoanProposalCommand command, LoanProposalSourceData sourceData) {
+        boolean isDigital = deriveIsDigital(command);
+        if (!isDigital) return null;
+        String branchCode = sourceData.getBranch() != null ? sourceData.getBranch().getCode() : null;
+        String voCode = sourceData.getVillageOrganisation() != null ? sourceData.getVillageOrganisation().getCode() : null;
+        return String.format("OTC-%s-%s-%s", branchCode, voCode, command.getMemberId());
     }
 
-    private static Guardian mapGuardian(GuardianRequestDto dto) {
-        if (dto == null) return null;
-        return Guardian.builder()
-            .id(dto.id())
-            .name(dto.name())
-            .relationshipId(dto.relationshipId())
-            .nationalId(dto.nationalId())
-            .dateOfBirth(dto.dateOfBirth())
-            .build();
-    }
+    Nominee mapNominee(NomineeRequestDto dto);
 
-    private static CoBorrower mapCoBorrower(CoBorrowerRequestDto dto) {
-        if (dto == null) return null;
-        return CoBorrower.builder()
-            .id(dto.id())
-            .name(dto.name())
-            .relationshipId(dto.relationshipId())
-            .nationalId(dto.nationalId())
-            .dateOfBirth(dto.dateOfBirth())
-            .build();
-    }
+    Guardian mapGuardian(GuardianRequestDto dto);
 
-    private static SecondInsurer mapSecondInsurer(SecondInsurerRequestDto dto) {
-        if (dto == null) return null;
-        return SecondInsurer.builder()
-            .id(dto.id())
-            .name(dto.name())
-            .genderId(dto.genderId())
-            .relationshipId(dto.relationshipId())
-            .dateOfBirth(dto.dateOfBirth())
-            .nationalId(dto.nationalId())
-            .isEngagedWithOtherLoans(false)
-            .isEngagedWithOtherInsurance(false)
-            .hasOtherLoanAccounts(false)
-            .build();
-    }
+    CoBorrower mapCoBorrower(CoBorrowerRequestDto dto);
 
-    private static OtcModeOfPayment mapModeOfPayment(OtcModeOfPaymentRequestDto dto) {
-        if (dto == null) return null;
-        return new OtcModeOfPayment(
-            dto.modeOfPaymentId(),
-            dto.subType(),
-            dto.bankAccountNumber(),
-            dto.bankRoutingNumber(),
-            dto.bankId(),
-            dto.bankBranchId(),
-            dto.paymentSubTypeNumber(),
-            dto.paymentSubTypeDate(),
-            dto.bkashWalletNumber(),
-            dto.rocketWalletNumber(),
-            dto.premiumModeOfPaymentId(),
-            dto.digitalDisbursementModeId()
-        );
-    }
+    @Mapping(target = "isEngagedWithOtherLoans", constant = "false")
+    @Mapping(target = "isEngagedWithOtherInsurance", constant = "false")
+    @Mapping(target = "hasOtherLoanAccounts", constant = "false")
+    SecondInsurer mapSecondInsurer(SecondInsurerRequestDto dto);
 
-    private static AutoDebitCollection mapAutoDebitCollection(AutoDebitCollectionRequestDto dto) {
-        if (dto == null) return null;
-        return new AutoDebitCollection(
-            dto.subType(),
-            dto.memberBankManagementLinkId(),
-            dto.chequeNumbers(),
-            dto.micrNumbers(),
-            dto.rocketWalletNumber()
-        );
-    }
+    OtcModeOfPayment mapModeOfPayment(OtcModeOfPaymentRequestDto dto);
 
-    private static ProgotiDocumentChecklist mapProgotiDocumentChecklist(ProgotiDocumentChecklistRequestDto dto) {
-        if (dto == null) return null;
-        return new ProgotiDocumentChecklist(
-            dto.commitmentLetter(),
-            dto.collateralBond(),
-            dto.bankStatement(),
-            dto.securityCheck(),
-            dto.originalDeed(),
-            dto.bayaDeed(),
-            dto.pittDeed(),
-            dto.positionDeed(),
-            dto.duplicateDocumentWithWithdrawalReceipt(),
-            dto.dcr(),
-            dto.dismissalForm(),
-            dto.saOriginalPapers(),
-            dto.rsOriginalPapers(),
-            dto.taxReceipt(),
-            dto.heirCertificate(),
-            dto.stopRentOrAdvanceAgreement(),
-            dto.seizedPropertyInvestigativeReport(),
-            dto.other()
-        );
-    }
+    AutoDebitCollection mapAutoDebitCollection(AutoDebitCollectionRequestDto dto);
 
-    private static FireInsuranceDetails mapFireInsuranceDetails(FireInsuranceDetailsRequestDto dto) {
-        if (dto == null) return null;
-        return new FireInsuranceDetails(
-            dto.businessName(),
-            dto.businessAddress(),
-            dto.businessPhone(),
-            dto.businessEmail(),
-            dto.divisionId(),
-            dto.districtId(),
-            dto.thanaId(),
-            dto.businessTypeId(),
-            dto.constructionOfPremisesId(),
-            dto.fireInsurancePremiumAmount(),
-            dto.fireInsuranceInsuredAmount(),
-            dto.durationOfFireInsurance(),
-            dto.fireInsuranceProductName(),
-            dto.bracCommissionAmount(),
-            dto.memberCommissionAmount()
-        );
-    }
+    ProgotiDocumentChecklist mapProgotiDocumentChecklist(ProgotiDocumentChecklistRequestDto dto);
+
+    FireInsuranceDetails mapFireInsuranceDetails(FireInsuranceDetailsRequestDto dto);
 }
