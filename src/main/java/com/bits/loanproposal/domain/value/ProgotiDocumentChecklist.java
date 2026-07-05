@@ -1,4 +1,4 @@
-package com.bits.loanproposal.domain.valueobject;
+package com.bits.loanproposal.domain.value;
 
 public record ProgotiDocumentChecklist(
     Boolean commitmentLetter,

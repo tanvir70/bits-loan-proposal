@@ -1,4 +1,4 @@
-package com.bits.loanproposal.domain.valueobject;
+package com.bits.loanproposal.domain.value;
 
 import com.bits.loanproposal.domain.enums.ModeOfPaymentSubType;
 import java.time.LocalDate;

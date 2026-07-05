@@ -1,9 +1,10 @@
 package com.bits.loanproposal.domain.event;
 
+import com.bits.ddd.shared.domain.value.DomainStatus;
 import com.bits.ddd.shared.messaging.DomainEventMessage;
 import com.bits.loanproposal.domain.enums.*;
 import com.bits.loanproposal.domain.entity.*;
-import com.bits.loanproposal.domain.valueobject.*;
+import com.bits.loanproposal.domain.value.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 

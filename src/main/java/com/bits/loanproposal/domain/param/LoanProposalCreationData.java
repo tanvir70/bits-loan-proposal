@@ -2,7 +2,7 @@ package com.bits.loanproposal.domain.param;
 
 import com.bits.loanproposal.domain.enums.*;
 import com.bits.loanproposal.domain.entity.*;
-import com.bits.loanproposal.domain.valueobject.*;
+import com.bits.loanproposal.domain.value.*;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
