@@ -3,9 +3,9 @@ package com.bits.loanproposal.application.commandhandler;
 import com.bits.ddd.annotation.PersistDomain;
 import com.bits.ddd.annotation.RegisterCommandHandler;
 import com.bits.ddd.handler.CommandHandler;
+import com.bits.ddd.service.DomainPersistenceService;
 import com.bits.ddd.service.MessageProcessor;
 import com.bits.ddd.service.SourceDataContext;
-import com.bits.ddd.service.DomainPersistenceService;
 import com.bits.ddd.shared.exception.domain.DomainValidationException;
 import com.bits.loanproposal.application.command.CreateLoanProposalCommand;
 import com.bits.loanproposal.application.dto.LoanProposalSourceData;
@@ -16,6 +16,9 @@ import com.bits.loanproposal.domain.aggregate.LoanProposal;
 import com.bits.loanproposal.domain.aggregate.LoanProposalRepository;
 import com.bits.loanproposal.domain.param.LoanProposalCreationData;
 import org.springframework.stereotype.Service;
+
+import static com.bits.loanproposal.domain.constant.DomainErrorConstant.ALREADY_EXISTS;
+import static com.bits.loanproposal.domain.constant.DomainErrorConstant.LOAN_PROPOSAL_ALREADY_EXISTS;
 
 @Service
 @RegisterCommandHandler
@@ -45,20 +48,17 @@ public class CreateLoanProposalCommandHandler implements CommandHandler<CreateLo
     public void handle(CreateLoanProposalCommand command) {
         // 1. Verify proposal ID uniqueness
         if (repository.findById(command.getId()).isPresent()) {
-            throw new DomainValidationException(
-                "ALREADY_EXISTS", 
-                "Buffer Loan Proposal already exists with given id."
-            );
+            throw new DomainValidationException(ALREADY_EXISTS, LOAN_PROPOSAL_ALREADY_EXISTS);
         }
 
-        // 2. Fetch all required lookups
+        // 2. Fetch all required source data lookups
         SourceDataContext context = sourceDataProvider.provide(command);
         LoanProposalSourceData sourceData = LoanProposalSourceDataMapper.toSourceData(context);
-        
+
         // 3. Map to parameters and create aggregate
         LoanProposalCreationData creationData = dataMapper.toCreationData(command, sourceData);
-        LoanProposal loanProposal = LoanProposal.create(creationData);
-        
+        LoanProposal loanProposal = LoanProposal.create(creationData, sourceData);
+
         // 4. Persist and publish events
         persistenceService.persist(loanProposal);
         messageProcessor.publish(loanProposal.getEvents());

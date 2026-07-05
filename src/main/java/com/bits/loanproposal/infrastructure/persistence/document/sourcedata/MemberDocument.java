@@ -35,7 +35,6 @@ public class MemberDocument extends SourceData<Long> {
     private String rocketWalletNumber;
     private Boolean isGolden;
     private String nationalId;
-
     private boolean hasActiveRemittanceOrMigrationOrGeneralLoan;
     private boolean hasGeneralLoanNotCurrentOrClosedOrWithOverdue;
     private boolean isFirstGotiLoan;

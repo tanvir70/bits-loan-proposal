@@ -1,5 +1,6 @@
 package com.bits.loanproposal.application.mapper;
 
+import com.bits.ddd.dto.SourceData;
 import com.bits.ddd.service.SourceDataContext;
 import com.bits.loanproposal.application.dto.LoanProposalSourceData;
 import com.bits.loanproposal.infrastructure.persistence.document.sourcedata.*;
@@ -17,10 +18,10 @@ public final class LoanProposalSourceDataMapper {
         ProjectDocument projectDoc = context.get("project", ProjectDocument.class);
         ProjectPolicyDocument projectPolicyDoc = context.get("projectPolicy", ProjectPolicyDocument.class);
         BranchDocument branchDoc = context.get("branch", BranchDocument.class);
-        VillageOrganisationDocument voDoc = context.get("villageOrganisation", VillageOrganisationDocument.class);
-        InsuranceProductDocument insuranceDoc = context.get("insuranceProduct", InsuranceProductDocument.class);
-        CountryDocument countryDoc = context.get("country", CountryDocument.class);
-        BankDocument bankDoc = context.get("bank", BankDocument.class);
+        VillageOrganisationDocument voDoc = getOrNull(context, "villageOrganisation", VillageOrganisationDocument.class);
+        InsuranceProductDocument insuranceDoc = getOrNull(context, "insuranceProduct", InsuranceProductDocument.class);
+        CountryDocument countryDoc = getOrNull(context, "country", CountryDocument.class);
+        BankDocument bankDoc = getOrNull(context, "bank", BankDocument.class);
 
         return LoanProposalSourceData.builder()
                 .member(memberDoc != null ? memberDoc.toModel() : null)
@@ -36,5 +37,13 @@ public final class LoanProposalSourceDataMapper {
                 .country(countryDoc != null ? countryDoc.toModel() : null)
                 .bank(bankDoc != null ? bankDoc.toModel() : null)
                 .build();
+    }
+
+    private static <S extends SourceData<?>> S getOrNull(SourceDataContext context, String key, Class<S> type) {
+        try {
+            return context.get(key, type);
+        } catch (IllegalArgumentException e) {
+            return null;
+        }
     }
 }

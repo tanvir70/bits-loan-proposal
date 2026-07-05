@@ -6,8 +6,9 @@ spring:
     port: 5672
     username: guest
     password: guest
-  mongodb:
-    uri: mongodb://localhost:27017/loan_proposal_command
+  data:
+    mongodb:
+      uri: mongodb://localhost:27017/loan_proposal_command
 
 server:
   port: 8081

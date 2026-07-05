@@ -29,8 +29,6 @@ public class Member {
     private String rocketWalletNumber;
     private Boolean isGolden;
     private String nationalId;
-
-    // Helper fields to satisfy business specifications
     private boolean hasActiveRemittanceOrMigrationOrGeneralLoan;
     private boolean hasGeneralLoanNotCurrentOrClosedOrWithOverdue;
     private boolean isFirstGotiLoan;
