@@ -1,12 +1,22 @@
 package com.bits.loanproposal.domain.aggregate;
 
 import com.bits.ddd.aggregate.AggregateRoot;
+import com.bits.ddd.shared.domain.value.DomainStatus;
+import com.bits.ddd.shared.exception.domain.DomainValidationException;
+import com.bits.ddd.shared.localization.LocalizedMessage;
+import com.bits.loanproposal.application.dto.LoanProposalSourceData;
 import com.bits.loanproposal.domain.enums.*;
 import com.bits.loanproposal.domain.entity.*;
-import com.bits.loanproposal.domain.valueobject.*;
+import com.bits.loanproposal.domain.value.*;
 import com.bits.loanproposal.domain.param.LoanProposalCreationData;
 import com.bits.loanproposal.domain.mapper.LoanProposalEventMapper;
+import com.bits.loanproposal.domain.specification.context.LoanProposalValidationContext;
+import com.bits.loanproposal.domain.specification.rules.LoanAmountSpecification;
+import com.bits.loanproposal.domain.specification.rules.MemberEligibilitySpecification;
 import lombok.Getter;
+
+import static com.bits.loanproposal.domain.constant.DomainErrorConstant.ID_NULL;
+import static com.bits.loanproposal.domain.constant.DomainErrorConstant.PROPOSAL_ID_MUST_NOT_BE_NULL;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.springframework.data.annotation.Id;
@@ -16,7 +26,9 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.UUID;
+import java.util.Map;
+import java.util.concurrent.ThreadLocalRandom;
+import java.util.stream.Collectors;
 
 @Getter
 @Setter
@@ -143,11 +155,14 @@ public class LoanProposal extends AggregateRoot<String> {
     private Long approvalLogId;
     private Long changeLogId;
 
-    public static LoanProposal create(LoanProposalCreationData creationData) {
+    public static LoanProposal create(LoanProposalCreationData creationData, LoanProposalSourceData sourceData) {
+        if (creationData.id() == null) {
+            throw new DomainValidationException(ID_NULL, PROPOSAL_ID_MUST_NOT_BE_NULL);
+        }
         LoanProposal proposal = new LoanProposal();
-        proposal.id = creationData.id() != null ? creationData.id() : UUID.randomUUID().toString();
+        proposal.id = creationData.id();
         proposal.loanProposalId = creationData.loanProposalId();
-        proposal.proposalNumber = creationData.proposalNumber();
+        proposal.proposalNumber = generateProposalNumber(creationData.applicationDate());
         proposal.proposalReferenceNumber = creationData.proposalReferenceNumber();
         proposal.branchId = creationData.branchId();
         proposal.branchCode = creationData.branchCode();
@@ -260,8 +275,46 @@ public class LoanProposal extends AggregateRoot<String> {
         proposal.approvalLogId = creationData.approvalLogId();
         proposal.changeLogId = creationData.changeLogId();
 
+        proposal.validate(sourceData);
+
         proposal.addEvent(LoanProposalEventMapper.INSTANCE.toCreatedEvent(proposal));
         return proposal;
+    }
+
+    private void validate(LoanProposalSourceData sourceData) {
+        LoanProposalValidationContext context = new LoanProposalValidationContext(
+                sourceData.getMember(),
+                sourceData.getLoanProduct(),
+                sourceData.getLoanProductDetails(),
+                sourceData.getLoanProductPolicy(),
+                sourceData.getScheme(),
+                sourceData.getProject(),
+                sourceData.getProjectPolicy(),
+                sourceData.getBranch(),
+                sourceData.getVillageOrganisation(),
+                sourceData.getInsuranceProduct(),
+                sourceData.getCountry(),
+                sourceData.getBank(),
+                this);
+
+        // ponytail: 2 of the 21 DDD-REQ spec categories implemented; append .and(...) here as the rest land
+        Map<String, LocalizedMessage> errors = new MemberEligibilitySpecification()
+                .and(new LoanAmountSpecification())
+                .validate(context);
+
+        if (!errors.isEmpty()) {
+            String detail = errors.entrySet().stream()
+                    .map(e -> e.getKey() + ": " + e.getValue().getKey())
+                    .collect(Collectors.joining("; "));
+            throw new DomainValidationException("LOAN_PROPOSAL_VALIDATION_FAILED", detail);
+        }
+    }
+
+    private static String generateProposalNumber(LocalDate applicationDate) {
+        LocalDate date = applicationDate != null ? applicationDate : LocalDate.now();
+        // ponytail: random 5-digit suffix guarded by the unique proposalNumber+branch index; switch to a Mongo counter if collisions surface
+        return String.format("%d%02d-%05d", date.getYear(), date.getMonthValue(),
+                ThreadLocalRandom.current().nextInt(100_000));
     }
 
     @Override
