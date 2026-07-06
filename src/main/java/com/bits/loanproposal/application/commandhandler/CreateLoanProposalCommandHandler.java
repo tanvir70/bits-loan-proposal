@@ -46,20 +46,16 @@ public class CreateLoanProposalCommandHandler implements CommandHandler<CreateLo
 
     @Override
     public void handle(CreateLoanProposalCommand command) {
-        // 1. Verify proposal ID uniqueness
         if (repository.findById(command.getId()).isPresent()) {
             throw new DomainValidationException(ALREADY_EXISTS, LOAN_PROPOSAL_ALREADY_EXISTS);
         }
 
-        // 2. Fetch all required source data lookups
         SourceDataContext context = sourceDataProvider.provide(command);
         LoanProposalSourceData sourceData = LoanProposalSourceDataMapper.toSourceData(context);
 
-        // 3. Map to parameters and create aggregate
         LoanProposalCreationData creationData = dataMapper.toCreationData(command, sourceData);
         LoanProposal loanProposal = LoanProposal.create(creationData, sourceData);
 
-        // 4. Persist and publish events
         persistenceService.persist(loanProposal);
         messageProcessor.publish(loanProposal.getEvents());
         loanProposal.clearEvents();

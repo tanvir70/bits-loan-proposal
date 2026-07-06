@@ -34,7 +34,7 @@ public class LoanProposalCommandController extends BaseApiController {
     }
 
     @PostMapping
-    public ResponseEntity<ApiResponse> createLoanProposal(
+    public ResponseEntity<ApiResponse<Void>> createLoanProposal(
             @RequestAttribute(name = "trace_id", required = false) String tracerId,
             @Valid @RequestBody CreateLoanProposalRequestDto createLoanProposalRequestDto) {
 
