@@ -11,8 +11,27 @@ import com.bits.loanproposal.domain.value.*;
 import com.bits.loanproposal.domain.param.LoanProposalCreationData;
 import com.bits.loanproposal.domain.mapper.LoanProposalEventMapper;
 import com.bits.loanproposal.domain.specification.context.LoanProposalValidationContext;
+import com.bits.loanproposal.domain.specification.rules.AgeLimitSpecification;
+import com.bits.loanproposal.domain.specification.rules.BankModeOfPaymentSpecification;
+import com.bits.loanproposal.domain.specification.rules.BranchProjectVoConsistencySpecification;
+import com.bits.loanproposal.domain.specification.rules.CoBorrowerSpecification;
+import com.bits.loanproposal.domain.specification.rules.DigitalDisbursementSpecification;
+import com.bits.loanproposal.domain.specification.rules.FireInsuranceSpecification;
+import com.bits.loanproposal.domain.specification.rules.InstallmentConfigurationSpecification;
+import com.bits.loanproposal.domain.specification.rules.InsurancePolicyTypeSecondInsurerSpecification;
 import com.bits.loanproposal.domain.specification.rules.LoanAmountSpecification;
+import com.bits.loanproposal.domain.specification.rules.LoanExposureLimitSpecification;
+import com.bits.loanproposal.domain.specification.rules.LoanProductPolicySpecification;
 import com.bits.loanproposal.domain.specification.rules.MemberEligibilitySpecification;
+import com.bits.loanproposal.domain.specification.rules.MigrationCountrySpecification;
+import com.bits.loanproposal.domain.specification.rules.ModeOfPaymentRocketWalletSpecification;
+import com.bits.loanproposal.domain.specification.rules.MoneyPlantSpecification;
+import com.bits.loanproposal.domain.specification.rules.NomineeSpecification;
+import com.bits.loanproposal.domain.specification.rules.ParallelCoExistingLoanSpecification;
+import com.bits.loanproposal.domain.specification.rules.ProjectSpecificRulesSpecification;
+import com.bits.loanproposal.domain.specification.rules.RepaymentFrequencyModeOfPaymentSpecification;
+import com.bits.loanproposal.domain.specification.rules.SchemeSectorMappingSpecification;
+import com.bits.loanproposal.domain.specification.rules.SpecialSavingsLienSpecification;
 import lombok.Getter;
 
 import static com.bits.loanproposal.domain.constant.DomainErrorConstant.ID_NULL;
@@ -180,7 +199,7 @@ public class LoanProposal extends AggregateRoot<String> {
         proposal.subSectorId = creationData.subSectorId();
         proposal.frequencyId = creationData.frequencyId();
         proposal.proposedLoanAmount = creationData.proposedLoanAmount();
-        proposal.approvedLoanAmount = creationData.proposedLoanAmount(); // Initialized to proposed
+        proposal.approvedLoanAmount = creationData.proposedLoanAmount();
         proposal.proposedGrantAmount = creationData.proposedGrantAmount();
         proposal.approvedGrantAmount = creationData.approvedGrantAmount();
         proposal.preProposedLoanAmount = creationData.preProposedLoanAmount();
@@ -297,9 +316,27 @@ public class LoanProposal extends AggregateRoot<String> {
                 sourceData.getBank(),
                 this);
 
-        // ponytail: 2 of the 21 DDD-REQ spec categories implemented; append .and(...) here as the rest land
         Map<String, LocalizedMessage> errors = new MemberEligibilitySpecification()
+                .and(new BranchProjectVoConsistencySpecification())
+                .and(new LoanProductPolicySpecification())
+                .and(new RepaymentFrequencyModeOfPaymentSpecification())
                 .and(new LoanAmountSpecification())
+                .and(new LoanExposureLimitSpecification())
+                .and(new CoBorrowerSpecification())
+                .and(new InsurancePolicyTypeSecondInsurerSpecification())
+                .and(new NomineeSpecification())
+                .and(new SpecialSavingsLienSpecification())
+                .and(new ProjectSpecificRulesSpecification())
+                .and(new ParallelCoExistingLoanSpecification())
+                .and(new InstallmentConfigurationSpecification())
+                .and(new ModeOfPaymentRocketWalletSpecification())
+                .and(new DigitalDisbursementSpecification())
+                .and(new MigrationCountrySpecification())
+                .and(new FireInsuranceSpecification())
+                .and(new AgeLimitSpecification())
+                .and(new MoneyPlantSpecification())
+                .and(new SchemeSectorMappingSpecification())
+                .and(new BankModeOfPaymentSpecification())
                 .validate(context);
 
         if (!errors.isEmpty()) {
