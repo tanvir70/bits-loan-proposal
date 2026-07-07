@@ -12,7 +12,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.beans.factory.annotation.Qualifier;
 
 @Configuration
-public class LoanProposalQueueConfig {
+public class RabbitMQConfig {
 
     private static final String DEAD_LETTER_EXCHANGE_ARGUMENT = "x-dead-letter-exchange";
     private static final String DEAD_LETTER_ROUTING_KEY_ARGUMENT = "x-dead-letter-routing-key";
