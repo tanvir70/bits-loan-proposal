@@ -58,6 +58,5 @@ public class CreateLoanProposalCommandHandler implements CommandHandler<CreateLo
 
         persistenceService.persist(loanProposal);
         messageProcessor.publish(loanProposal.getEvents());
-        loanProposal.clearEvents();
     }
 }

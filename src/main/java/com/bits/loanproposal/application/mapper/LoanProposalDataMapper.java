@@ -1,13 +1,23 @@
 package com.bits.loanproposal.application.mapper;
 
 import com.bits.loanproposal.application.command.CreateLoanProposalCommand;
+import com.bits.loanproposal.application.command.UpdateLoanProposalCommand;
 import com.bits.loanproposal.application.dto.LoanProposalSourceData;
-import com.bits.loanproposal.domain.entity.*;
-import com.bits.loanproposal.domain.value.*;
+import com.bits.loanproposal.domain.entity.CoBorrower;
+import com.bits.loanproposal.domain.entity.Guardian;
+import com.bits.loanproposal.domain.entity.Nominee;
+import com.bits.loanproposal.domain.entity.SecondInsurer;
 import com.bits.loanproposal.domain.param.LoanProposalCreationData;
+import com.bits.loanproposal.domain.param.LoanProposalUpdateData;
+import com.bits.loanproposal.domain.value.AutoDebitCollection;
+import com.bits.loanproposal.domain.value.FireInsuranceDetails;
+import com.bits.loanproposal.domain.value.OtcModeOfPayment;
+import com.bits.loanproposal.domain.value.ProgotiDocumentChecklist;
 import com.bits.loanproposal.presentation.controller.dto.*;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
+
+import java.util.List;
 
 @Mapper(componentModel = "spring")
 public interface LoanProposalDataMapper {
@@ -26,12 +36,67 @@ public interface LoanProposalDataMapper {
     @Mapping(target = "applicationDate", expression = "java(java.time.LocalDate.now())")
     LoanProposalCreationData toCreationData(CreateLoanProposalCommand command, LoanProposalSourceData sourceData);
 
+    default LoanProposalUpdateData toUpdateData(UpdateLoanProposalCommand command, LoanProposalSourceData sourceData) {
+        if (command == null) {
+            return null;
+        }
+        return new LoanProposalUpdateData(
+                command.getTracerId(),
+                command.getId(),
+                sourceData,
+                command.getLoanProductId(),
+                command.getLoanProductDetailsId(),
+                command.getLoanProductPolicyId(),
+                command.getSchemeId(),
+                command.getSectorId(),
+                command.getSubSectorId(),
+                command.getFrequencyId(),
+                command.getProposedLoanAmount(),
+                command.getProposedGrantAmount(),
+                command.getApprovedGrantAmount(),
+                command.getPreProposedLoanAmount(),
+                command.getInterestRate(),
+                command.getNumberOfInstallments(),
+                command.getInstallmentAmount(),
+                command.getRecalculatedInstallmentAmount(),
+                command.getProposalDurationInMonths(),
+                command.getLoanProposalType(),
+                command.getMicroInsurance(),
+                command.getPolicyTypeId(),
+                command.getInsuranceProductId(),
+                command.getPremiumAmount(),
+                command.getWantsFireInsurance(),
+                command.getFireInsuranceProductId(),
+                mapFireInsuranceDetails(command.getFireInsuranceDetails()),
+                mapModeOfPayment(command.getModeOfPayment()),
+                mapAutoDebitCollection(command.getAutoDebitCollection()),
+                mapNominees(command.getNominees()),
+                mapGuardian(command.getGuardian()),
+                mapCoBorrower(command.getCoBorrower()),
+                mapSecondInsurer(command.getSecondInsurer()),
+                command.getSpecialSavingsAccountIds(),
+                command.getSpecialSavingsAccountNumbers(),
+                command.getCountryId(),
+                command.getLoanApproverId(),
+                command.getTotalPovertyScore(),
+                command.getFieldOfficerId(),
+                command.getLoanSecurityAmount(),
+                command.getLoanSecurityBalance(),
+                command.getSpousePrimaryIncomeSource(),
+                command.getSpouseSecondaryIncomeSource(),
+                command.getFirstChildName(),
+                command.getSecondChildName(),
+                command.getLargeGroupLeaderName(),
+                command.getLargeGroupLeaderImage(),
+                command.getProposalReferenceNumber()
+        );
+    }
+
     // not defined in ears: the DDD-EARS doc only names derivedDigitalDisbursementFlag(modeOfPayment) without
     // defining it; this wallet-number/mode-id heuristic is a guess. Need to know verify from code base.
     default boolean deriveIsDigital(CreateLoanProposalCommand command) {
         return command.getModeOfPayment() != null && (command.getModeOfPayment().digitalDisbursementModeId() != null ||
-                 command.getModeOfPayment().rocketWalletNumber() != null ||
-                 command.getModeOfPayment().bkashWalletNumber() != null);
+                 command.getModeOfPayment().rocketWalletNumber() != null || command.getModeOfPayment().bkashWalletNumber() != null);
     }
 
     // not defined in ears: the "OTC-{branchCode}-{voCode}-{memberId}" . Need to know from code base
@@ -44,6 +109,13 @@ public interface LoanProposalDataMapper {
     }
 
     Nominee mapNominee(NomineeRequestDto dto);
+
+    default List<Nominee> mapNominees(List<NomineeRequestDto> dtos) {
+        if (dtos == null) {
+            return null;
+        }
+        return dtos.stream().map(this::mapNominee).toList();
+    }
 
     Guardian mapGuardian(GuardianRequestDto dto);
 
