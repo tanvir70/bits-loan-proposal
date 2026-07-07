@@ -1,0 +1,66 @@
+package com.bits.loanproposal.domain.param;
+
+import com.bits.loanproposal.application.dto.LoanProposalSourceData;
+import com.bits.loanproposal.domain.entity.CoBorrower;
+import com.bits.loanproposal.domain.entity.Guardian;
+import com.bits.loanproposal.domain.entity.Nominee;
+import com.bits.loanproposal.domain.entity.SecondInsurer;
+import com.bits.loanproposal.domain.enums.LoanProposalType;
+import com.bits.loanproposal.domain.value.AutoDebitCollection;
+import com.bits.loanproposal.domain.value.FireInsuranceDetails;
+import com.bits.loanproposal.domain.value.OtcModeOfPayment;
+
+import java.math.BigDecimal;
+import java.util.List;
+
+public record LoanProposalUpdateData(
+        String traceId,
+        String id,
+        LoanProposalSourceData sourceData,
+        Long loanProductId,
+        Long loanProductDetailsId,
+        Long loanProductPolicyId,
+        Long schemeId,
+        Long sectorId,
+        Long subSectorId,
+        Long frequencyId,
+        BigDecimal proposedLoanAmount,
+        BigDecimal proposedGrantAmount,
+        BigDecimal approvedGrantAmount,
+        BigDecimal preProposedLoanAmount,
+        BigDecimal interestRate,
+        Integer numberOfInstallments,
+        BigDecimal installmentAmount,
+        BigDecimal recalculatedInstallmentAmount,
+        Integer proposalDurationInMonths,
+        LoanProposalType loanProposalType,
+        Boolean microInsurance,
+        Long policyTypeId,
+        Long insuranceProductId,
+        BigDecimal premiumAmount,
+        Boolean wantsFireInsurance,
+        Long fireInsuranceProductId,
+        FireInsuranceDetails fireInsuranceDetails,
+        OtcModeOfPayment modeOfPayment,
+        AutoDebitCollection autoDebitCollection,
+        List<Nominee> nominees,
+        Guardian guardian,
+        CoBorrower coBorrower,
+        SecondInsurer secondInsurer,
+        List<String> specialSavingsAccountIds,
+        List<String> specialSavingsAccountNumbers,
+        Long countryId,
+        Long loanApproverId,
+        BigDecimal totalPovertyScore,
+        Long fieldOfficerId,
+        BigDecimal loanSecurityAmount,
+        BigDecimal loanSecurityBalance,
+        String spousePrimaryIncomeSource,
+        String spouseSecondaryIncomeSource,
+        String firstChildName,
+        String secondChildName,
+        String largeGroupLeaderName,
+        String largeGroupLeaderImage,
+        String proposalReferenceNumber
+) {
+}

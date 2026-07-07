@@ -9,6 +9,7 @@ import com.bits.loanproposal.domain.enums.*;
 import com.bits.loanproposal.domain.entity.*;
 import com.bits.loanproposal.domain.value.*;
 import com.bits.loanproposal.domain.param.LoanProposalCreationData;
+import com.bits.loanproposal.domain.param.LoanProposalUpdateData;
 import com.bits.loanproposal.domain.mapper.LoanProposalEventMapper;
 import com.bits.loanproposal.domain.specification.context.LoanProposalValidationContext;
 import com.bits.loanproposal.domain.specification.rules.AgeLimitSpecification;
@@ -36,6 +37,8 @@ import lombok.Getter;
 
 import static com.bits.loanproposal.domain.constant.DomainErrorConstant.ID_NULL;
 import static com.bits.loanproposal.domain.constant.DomainErrorConstant.PROPOSAL_ID_MUST_NOT_BE_NULL;
+import static com.bits.loanproposal.domain.constant.DomainErrorConstant.UPDATE_FAILED;
+import static com.bits.loanproposal.domain.constant.DomainErrorConstant.LOAN_PROPOSAL_UPDATE_FAILED;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.springframework.data.annotation.Id;
@@ -298,6 +301,90 @@ public class LoanProposal extends AggregateRoot<String> {
 
         proposal.addEvent(LoanProposalEventMapper.INSTANCE.toCreatedEvent(proposal));
         return proposal;
+    }
+
+    public void update(LoanProposalUpdateData updateData) {
+        if (this.loanProposalStatus != LoanProposalStatus.PENDING) {
+            throw new DomainValidationException(UPDATE_FAILED, LOAN_PROPOSAL_UPDATE_FAILED);
+        }
+
+        this.loanProductId = coalesce(updateData.loanProductId(), this.loanProductId);
+        this.loanProductDetailsId = coalesce(updateData.loanProductDetailsId(), this.loanProductDetailsId);
+        this.loanProductPolicyId = coalesce(updateData.loanProductPolicyId(), this.loanProductPolicyId);
+        this.schemeId = coalesce(updateData.schemeId(), this.schemeId);
+        this.sectorId = coalesce(updateData.sectorId(), this.sectorId);
+        this.subSectorId = coalesce(updateData.subSectorId(), this.subSectorId);
+        this.frequencyId = coalesce(updateData.frequencyId(), this.frequencyId);
+        this.proposedLoanAmount = coalesce(updateData.proposedLoanAmount(), this.proposedLoanAmount);
+        this.approvedLoanAmount = updateData.proposedLoanAmount() != null ? updateData.proposedLoanAmount() : this.approvedLoanAmount;
+        this.proposedGrantAmount = coalesce(updateData.proposedGrantAmount(), this.proposedGrantAmount);
+        this.approvedGrantAmount = coalesce(updateData.approvedGrantAmount(), this.approvedGrantAmount);
+        this.preProposedLoanAmount = coalesce(updateData.preProposedLoanAmount(), this.preProposedLoanAmount);
+        this.interestRate = coalesce(updateData.interestRate(), this.interestRate);
+        this.numberOfInstallments = coalesce(updateData.numberOfInstallments(), this.numberOfInstallments);
+        this.approvedNumberOfInstallments = updateData.numberOfInstallments() != null ? updateData.numberOfInstallments() : this.approvedNumberOfInstallments;
+        this.installmentAmount = coalesce(updateData.installmentAmount(), this.installmentAmount);
+        this.approvedInstallmentAmount = updateData.recalculatedInstallmentAmount() != null ? updateData.recalculatedInstallmentAmount() : this.approvedInstallmentAmount;
+        this.proposalDurationInMonths = coalesce(updateData.proposalDurationInMonths(), this.proposalDurationInMonths);
+        this.approvedDurationInMonths = updateData.proposalDurationInMonths() != null ? updateData.proposalDurationInMonths() : this.approvedDurationInMonths;
+        this.loanProposalType = coalesce(updateData.loanProposalType(), this.loanProposalType);
+        this.microInsurance = coalesce(updateData.microInsurance(), this.microInsurance);
+        this.policyTypeId = coalesce(updateData.policyTypeId(), this.policyTypeId);
+        this.insuranceProductId = coalesce(updateData.insuranceProductId(), this.insuranceProductId);
+        this.premiumAmount = coalesce(updateData.premiumAmount(), this.premiumAmount);
+        this.wantsFireInsurance = coalesce(updateData.wantsFireInsurance(), this.wantsFireInsurance);
+        this.fireInsuranceProductId = coalesce(updateData.fireInsuranceProductId(), this.fireInsuranceProductId);
+        this.fireInsuranceDetails = coalesce(updateData.fireInsuranceDetails(), this.fireInsuranceDetails);
+        this.modeOfPayment = coalesce(updateData.modeOfPayment(), this.modeOfPayment);
+        this.autoDebitCollection = coalesce(updateData.autoDebitCollection(), this.autoDebitCollection);
+        this.nominees = coalesce(updateData.nominees(), this.nominees);
+        this.guardian = coalesce(updateData.guardian(), this.guardian);
+        this.coBorrower = coalesce(updateData.coBorrower(), this.coBorrower);
+        this.secondInsurer = coalesce(updateData.secondInsurer(), this.secondInsurer);
+        this.specialSavingsAccountIds = coalesce(updateData.specialSavingsAccountIds(), this.specialSavingsAccountIds);
+        this.specialSavingsAccountNumbers = coalesce(updateData.specialSavingsAccountNumbers(), this.specialSavingsAccountNumbers);
+        this.countryId = coalesce(updateData.countryId(), this.countryId);
+        this.loanApproverId = coalesce(updateData.loanApproverId(), this.loanApproverId);
+        this.totalPovertyScore = coalesce(updateData.totalPovertyScore(), this.totalPovertyScore);
+        this.fieldOfficerId = coalesce(updateData.fieldOfficerId(), this.fieldOfficerId);
+        this.loanSecurityAmount = coalesce(updateData.loanSecurityAmount(), this.loanSecurityAmount);
+        this.loanSecurityBalance = coalesce(updateData.loanSecurityBalance(), this.loanSecurityBalance);
+        this.spousePrimaryIncomeSource = coalesce(updateData.spousePrimaryIncomeSource(), this.spousePrimaryIncomeSource);
+        this.spouseSecondaryIncomeSource = coalesce(updateData.spouseSecondaryIncomeSource(), this.spouseSecondaryIncomeSource);
+        this.firstChildName = coalesce(updateData.firstChildName(), this.firstChildName);
+        this.secondChildName = coalesce(updateData.secondChildName(), this.secondChildName);
+        this.largeGroupLeaderName = coalesce(updateData.largeGroupLeaderName(), this.largeGroupLeaderName);
+        this.largeGroupLeaderImage = coalesce(updateData.largeGroupLeaderImage(), this.largeGroupLeaderImage);
+        this.proposalReferenceNumber = coalesce(updateData.proposalReferenceNumber(), this.proposalReferenceNumber);
+        this.isDigitalDisbursement = deriveDigitalDisbursementFlag(this.modeOfPayment);
+        this.transactionDescription = deriveTransactionDescription(this.modeOfPayment);
+        this.loanProposalStatus = LoanProposalStatus.PENDING;
+        this.domainStatus = DomainStatus.UPDATED;
+
+        validate(updateData.sourceData());
+
+        addEvent(LoanProposalEventMapper.INSTANCE.toUpdatedEvent(this));
+    }
+
+    private static <T> T coalesce(T incoming, T current) {
+        return incoming != null ? incoming : current;
+    }
+
+    private Boolean deriveDigitalDisbursementFlag(OtcModeOfPayment modeOfPayment) {
+        if (modeOfPayment == null) {
+            return this.isDigitalDisbursement;
+        }
+        return modeOfPayment.digitalDisbursementModeId() != null;
+    }
+
+    private String deriveTransactionDescription(OtcModeOfPayment modeOfPayment) {
+        if (modeOfPayment == null) {
+            return this.transactionDescription;
+        }
+        if (!Boolean.TRUE.equals(deriveDigitalDisbursementFlag(modeOfPayment))) {
+            return null;
+        }
+        return String.format("OTC-%s-%s-%s", this.branchCode, this.villageOrganisationCode, this.memberId);
     }
 
     private void validate(LoanProposalSourceData sourceData) {
