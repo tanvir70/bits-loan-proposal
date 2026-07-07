@@ -19,6 +19,7 @@ public final class RabbitMQConstants {
     public static final String LOAN_PROPOSAL_UPDATE_COMMAND_ROUTING_KEY = "loan-proposal.update-command";
     public static final String LOAN_PROPOSAL_DELETE_COMMAND_ROUTING_KEY = "loan-proposal.delete-command";
     public static final String LOAN_PROPOSAL_CREATED_EVENT_ROUTING_KEY = "loan-proposal.created";
+    public static final String LOAN_PROPOSAL_FAILED_EVENT_ROUTING_KEY = "loan-proposal.failed";
     public static final String LOAN_PROPOSAL_UPDATED_EVENT_ROUTING_KEY = "loan-proposal.updated";
     public static final String LOAN_PROPOSAL_DELETED_EVENT_ROUTING_KEY = "loan-proposal.deleted";
 
