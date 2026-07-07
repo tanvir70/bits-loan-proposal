@@ -11,11 +11,10 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.beans.factory.annotation.Qualifier;
 
+import static com.bits.ddd.infra.messaging.broker.rabbitmq.RabbitMQConstants.DLX_EXCHANGE;
+
 @Configuration
 public class RabbitMQConfig {
-
-    private static final String DEAD_LETTER_EXCHANGE_ARGUMENT = "x-dead-letter-exchange";
-    private static final String DEAD_LETTER_ROUTING_KEY_ARGUMENT = "x-dead-letter-routing-key";
 
     @Bean
     public TopicExchange loanProposalExchange() {
@@ -55,31 +54,6 @@ public class RabbitMQConfig {
         return durableQueue(
                 RabbitMQConstants.LOAN_PROPOSAL_DELETED_EVENT_QUEUE,
                 RabbitMQConstants.LOAN_PROPOSAL_DELETED_EVENT_DLQ);
-    }
-
-    @Bean
-    public Queue loanProposalUpdateCommandDlq() {
-        return QueueBuilder.durable(RabbitMQConstants.LOAN_PROPOSAL_UPDATE_COMMAND_DLQ).build();
-    }
-
-    @Bean
-    public Queue loanProposalDeleteCommandDlq() {
-        return QueueBuilder.durable(RabbitMQConstants.LOAN_PROPOSAL_DELETE_COMMAND_DLQ).build();
-    }
-
-    @Bean
-    public Queue loanProposalCreatedEventDlq() {
-        return QueueBuilder.durable(RabbitMQConstants.LOAN_PROPOSAL_CREATED_EVENT_DLQ).build();
-    }
-
-    @Bean
-    public Queue loanProposalUpdatedEventDlq() {
-        return QueueBuilder.durable(RabbitMQConstants.LOAN_PROPOSAL_UPDATED_EVENT_DLQ).build();
-    }
-
-    @Bean
-    public Queue loanProposalDeletedEventDlq() {
-        return QueueBuilder.durable(RabbitMQConstants.LOAN_PROPOSAL_DELETED_EVENT_DLQ).build();
     }
 
     @Bean
@@ -123,40 +97,50 @@ public class RabbitMQConfig {
     }
 
     @Bean
-    public Binding loanProposalUpdateCommandDlqBinding() {
-        return bindDlq(loanProposalUpdateCommandDlq(), RabbitMQConstants.LOAN_PROPOSAL_UPDATE_COMMAND_DLQ);
+    public Binding loanProposalUpdateCommandDlqBinding(
+            @Qualifier("errorQueue") Queue errorQueue,
+            @Qualifier("dlqExchange") DirectExchange dlqExchange) {
+        return bindDlq(errorQueue, dlqExchange, RabbitMQConstants.LOAN_PROPOSAL_UPDATE_COMMAND_DLQ);
     }
 
     @Bean
-    public Binding loanProposalDeleteCommandDlqBinding() {
-        return bindDlq(loanProposalDeleteCommandDlq(), RabbitMQConstants.LOAN_PROPOSAL_DELETE_COMMAND_DLQ);
+    public Binding loanProposalDeleteCommandDlqBinding(
+            @Qualifier("errorQueue") Queue errorQueue,
+            @Qualifier("dlqExchange") DirectExchange dlqExchange) {
+        return bindDlq(errorQueue, dlqExchange, RabbitMQConstants.LOAN_PROPOSAL_DELETE_COMMAND_DLQ);
     }
 
     @Bean
-    public Binding loanProposalCreatedEventDlqBinding() {
-        return bindDlq(loanProposalCreatedEventDlq(), RabbitMQConstants.LOAN_PROPOSAL_CREATED_EVENT_DLQ);
+    public Binding loanProposalCreatedEventDlqBinding(
+            @Qualifier("errorQueue") Queue errorQueue,
+            @Qualifier("dlqExchange") DirectExchange dlqExchange) {
+        return bindDlq(errorQueue, dlqExchange, RabbitMQConstants.LOAN_PROPOSAL_CREATED_EVENT_DLQ);
     }
 
     @Bean
-    public Binding loanProposalUpdatedEventDlqBinding() {
-        return bindDlq(loanProposalUpdatedEventDlq(), RabbitMQConstants.LOAN_PROPOSAL_UPDATED_EVENT_DLQ);
+    public Binding loanProposalUpdatedEventDlqBinding(
+            @Qualifier("errorQueue") Queue errorQueue,
+            @Qualifier("dlqExchange") DirectExchange dlqExchange) {
+        return bindDlq(errorQueue, dlqExchange, RabbitMQConstants.LOAN_PROPOSAL_UPDATED_EVENT_DLQ);
     }
 
     @Bean
-    public Binding loanProposalDeletedEventDlqBinding() {
-        return bindDlq(loanProposalDeletedEventDlq(), RabbitMQConstants.LOAN_PROPOSAL_DELETED_EVENT_DLQ);
+    public Binding loanProposalDeletedEventDlqBinding(
+            @Qualifier("errorQueue") Queue errorQueue,
+            @Qualifier("dlqExchange") DirectExchange dlqExchange) {
+        return bindDlq(errorQueue, dlqExchange, RabbitMQConstants.LOAN_PROPOSAL_DELETED_EVENT_DLQ);
     }
 
     private Queue durableQueue(String queueName, String deadLetterRoutingKey) {
         return QueueBuilder.durable(queueName)
-                .withArgument(DEAD_LETTER_EXCHANGE_ARGUMENT, RabbitMQConstants.DLX_EXCHANGE)
-                .withArgument(DEAD_LETTER_ROUTING_KEY_ARGUMENT, deadLetterRoutingKey)
+                .deadLetterExchange(DLX_EXCHANGE)
+                .deadLetterRoutingKey(deadLetterRoutingKey)
                 .build();
     }
 
-    private Binding bindDlq(Queue queue, String routingKey) {
+    private Binding bindDlq(Queue queue, DirectExchange dlqExchange, String routingKey) {
         return BindingBuilder.bind(queue)
-                .to(new DirectExchange(RabbitMQConstants.DLX_EXCHANGE))
+                .to(dlqExchange)
                 .with(routingKey);
     }
 }

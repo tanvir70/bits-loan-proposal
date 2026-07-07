@@ -2,7 +2,6 @@ package com.bits.loanproposal.infrastructure.messaging;
 
 public final class RabbitMQConstants {
     public static final String LOAN_PROPOSAL_EXCHANGE = "loan-proposal.exchange";
-    public static final String DLX_EXCHANGE = com.bits.ddd.infra.messaging.broker.rabbitmq.RabbitMQConstants.DLX_EXCHANGE;
 
     public static final String LOAN_PROPOSAL_UPDATE_COMMAND_QUEUE = "loan-proposal.update-command.queue";
     public static final String LOAN_PROPOSAL_DELETE_COMMAND_QUEUE = "loan-proposal.delete-command.queue";

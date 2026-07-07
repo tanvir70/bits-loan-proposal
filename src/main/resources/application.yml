@@ -4,8 +4,8 @@ spring:
   rabbitmq:
     host: localhost
     port: 5672
-    username: guest
-    password: guest
+    username: admin
+    password: admin
   mongodb:
     uri: mongodb://localhost:27017/loan_proposal_command
 
