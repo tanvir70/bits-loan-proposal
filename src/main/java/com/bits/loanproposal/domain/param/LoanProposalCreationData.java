@@ -12,6 +12,7 @@ public record LoanProposalCreationData(
     String id,
     String traceId,
     Long loanProposalId,
+    Long sequence,
     String proposalNumber,
     String proposalReferenceNumber,
     Long branchId,

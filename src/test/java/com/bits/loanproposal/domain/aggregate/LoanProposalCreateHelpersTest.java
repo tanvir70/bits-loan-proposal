@@ -61,6 +61,14 @@ class LoanProposalCreateHelpersTest {
     }
 
     @Test
+    void proposalNumberUsesYearMonthAndSequence() {
+        assertEquals("202607-00042",
+                LoanProposal.generateProposalNumber(java.time.LocalDate.of(2026, 7, 7), 42L));
+        assertEquals("202612-99999",
+                LoanProposal.generateProposalNumber(java.time.LocalDate.of(2026, 12, 1), 99999L));
+    }
+
+    @Test
     void guardianLinkedToFirstNomineeAndCoBorrowerIdAssigned() {
         List<Nominee> nominees = LoanProposal.assignNomineeIds(
                 List.of(Nominee.builder().name("A").build()));
