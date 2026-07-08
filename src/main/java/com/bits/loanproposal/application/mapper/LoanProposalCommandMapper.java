@@ -1,7 +1,9 @@
 package com.bits.loanproposal.application.mapper;
 
 import com.bits.loanproposal.application.command.CreateLoanProposalCommand;
+import com.bits.loanproposal.application.command.DeleteLoanProposalCommand;
 import com.bits.loanproposal.application.command.UpdateLoanProposalCommand;
+import com.bits.loanproposal.application.dto.DeleteLoanProposalMessageDto;
 import com.bits.loanproposal.application.dto.UpdateLoanProposalMessageDto;
 import com.bits.loanproposal.presentation.controller.dto.CreateLoanProposalRequestDto;
 import org.mapstruct.Mapper;
@@ -12,6 +14,22 @@ public interface LoanProposalCommandMapper {
 
   @Mapping(target = "tracerId", source = "tracerId")
   CreateLoanProposalCommand toCreateCommand(String tracerId, CreateLoanProposalRequestDto request);
+
+  default DeleteLoanProposalCommand toDeleteCommand(String tracerId, String id, Long branchId, String deletedBy) {
+    return new DeleteLoanProposalCommand(tracerId, id, branchId, deletedBy);
+  }
+
+  default DeleteLoanProposalCommand toDeleteCommand(DeleteLoanProposalMessageDto request) {
+    if (request == null) {
+      return null;
+    }
+    return new DeleteLoanProposalCommand(
+        request.tracerId(),
+        request.id(),
+        request.branchId(),
+        request.deletedBy()
+    );
+  }
 
   default UpdateLoanProposalCommand toUpdateCommand(UpdateLoanProposalMessageDto request) {
     if (request == null) {

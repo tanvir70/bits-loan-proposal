@@ -4,11 +4,14 @@ import com.bits.ddd.controller.BaseApiController;
 import com.bits.ddd.dto.ApiResponse;
 import com.bits.ddd.infra.core.bus.CommandBus;
 import com.bits.loanproposal.application.command.CreateLoanProposalCommand;
+import com.bits.loanproposal.application.command.DeleteLoanProposalCommand;
 import com.bits.loanproposal.application.mapper.LoanProposalCommandMapper;
 import com.bits.loanproposal.presentation.controller.dto.CreateLoanProposalRequestDto;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestAttribute;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -45,6 +48,26 @@ public class LoanProposalCommandController extends BaseApiController {
         CreateLoanProposalCommand command = commandMapper.toCreateCommand(tracerId,
                 createLoanProposalRequestDto);
         commandBus.handle(command);
+
+        return respond(HttpStatus.ACCEPTED, ACCEPTED, tracerId);
+    }
+
+    @DeleteMapping("/{branchId}/{id}")
+    public ResponseEntity<ApiResponse<Void>> deleteLoanProposal(
+            @RequestAttribute(name = "trace_id", required = false) String tracerId,
+            @RequestAttribute(name = "user_id", required = false) String deletedBy,
+            @PathVariable Long branchId,
+            @PathVariable String id) {
+
+        if (tracerId == null) {
+            tracerId = UUID.randomUUID().toString();
+        }
+        if (deletedBy == null || deletedBy.isBlank()) {
+            deletedBy = "system";
+        }
+
+        DeleteLoanProposalCommand deleteLoanProposalCommand = commandMapper.toDeleteCommand(tracerId, id, branchId, deletedBy);
+        commandBus.handle(deleteLoanProposalCommand);
 
         return respond(HttpStatus.ACCEPTED, ACCEPTED, tracerId);
     }

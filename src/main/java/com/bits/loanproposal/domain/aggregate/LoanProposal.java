@@ -5,43 +5,23 @@ import com.bits.ddd.shared.domain.value.DomainStatus;
 import com.bits.ddd.shared.exception.domain.DomainValidationException;
 import com.bits.ddd.shared.localization.LocalizedMessage;
 import com.bits.loanproposal.application.dto.LoanProposalSourceData;
-import com.bits.loanproposal.domain.enums.*;
 import com.bits.loanproposal.domain.entity.*;
-import com.bits.loanproposal.domain.value.*;
-import com.bits.loanproposal.domain.param.LoanProposalCreationData;
-import com.bits.loanproposal.domain.param.LoanProposalUpdateData;
+import com.bits.loanproposal.domain.enums.ApiDataSource;
+import com.bits.loanproposal.domain.enums.LoanProposalStatus;
+import com.bits.loanproposal.domain.enums.LoanProposalType;
 import com.bits.loanproposal.domain.event.LoanProposalFailedEvent;
 import com.bits.loanproposal.domain.exception.LoanProposalValidationException;
 import com.bits.loanproposal.domain.mapper.LoanProposalEventMapper;
+import com.bits.loanproposal.domain.param.LoanProposalCreationData;
+import com.bits.loanproposal.domain.param.LoanProposalDeletionData;
+import com.bits.loanproposal.domain.param.LoanProposalUpdateData;
 import com.bits.loanproposal.domain.specification.context.LoanProposalValidationContext;
-import com.bits.loanproposal.domain.specification.rules.AgeLimitSpecification;
-import com.bits.loanproposal.domain.specification.rules.BankModeOfPaymentSpecification;
-import com.bits.loanproposal.domain.specification.rules.BranchProjectVoConsistencySpecification;
-import com.bits.loanproposal.domain.specification.rules.CoBorrowerSpecification;
-import com.bits.loanproposal.domain.specification.rules.DigitalDisbursementSpecification;
-import com.bits.loanproposal.domain.specification.rules.FireInsuranceSpecification;
-import com.bits.loanproposal.domain.specification.rules.InstallmentConfigurationSpecification;
-import com.bits.loanproposal.domain.specification.rules.InsurancePolicyTypeSecondInsurerSpecification;
-import com.bits.loanproposal.domain.specification.rules.LoanAmountSpecification;
-import com.bits.loanproposal.domain.specification.rules.LoanExposureLimitSpecification;
-import com.bits.loanproposal.domain.specification.rules.LoanProductPolicySpecification;
-import com.bits.loanproposal.domain.specification.rules.MemberEligibilitySpecification;
-import com.bits.loanproposal.domain.specification.rules.MigrationCountrySpecification;
-import com.bits.loanproposal.domain.specification.rules.ModeOfPaymentRocketWalletSpecification;
-import com.bits.loanproposal.domain.specification.rules.MoneyPlantSpecification;
-import com.bits.loanproposal.domain.specification.rules.NomineeSpecification;
-import com.bits.loanproposal.domain.specification.rules.ParallelCoExistingLoanSpecification;
-import com.bits.loanproposal.domain.specification.rules.ProjectSpecificRulesSpecification;
-import com.bits.loanproposal.domain.specification.rules.RepaymentFrequencyModeOfPaymentSpecification;
-import com.bits.loanproposal.domain.specification.rules.SchemeSectorMappingSpecification;
-import com.bits.loanproposal.domain.specification.rules.SpecialSavingsLienSpecification;
+import com.bits.loanproposal.domain.specification.rules.*;
+import com.bits.loanproposal.domain.value.AutoDebitCollection;
+import com.bits.loanproposal.domain.value.FireInsuranceDetails;
+import com.bits.loanproposal.domain.value.OtcModeOfPayment;
+import com.bits.loanproposal.domain.value.ProgotiDocumentChecklist;
 import lombok.Getter;
-
-import static com.bits.loanproposal.domain.constant.DomainErrorConstant.ID_NULL;
-import static com.bits.loanproposal.domain.constant.DomainErrorConstant.PROPOSAL_ID_MUST_NOT_BE_NULL;
-import static com.bits.loanproposal.domain.constant.DomainErrorConstant.UPDATE_FAILED;
-import static com.bits.loanproposal.domain.constant.DomainErrorConstant.LOAN_PROPOSAL_UPDATE_FAILED;
-
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.springframework.data.annotation.Id;
@@ -54,7 +34,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
-import java.util.stream.Collectors;
+
+import static com.bits.loanproposal.domain.constant.DomainErrorConstant.*;
 
 @Getter
 @Setter
@@ -179,6 +160,9 @@ public class LoanProposal extends AggregateRoot<String> {
     private BigDecimal disbursedAmount;
     private Long approvalLogId;
     private Long changeLogId;
+    private Boolean deleted;
+    private String deletedBy;
+    private LocalDateTime deletedAt;
 
     public static LoanProposal create(LoanProposalCreationData creationData, LoanProposalSourceData sourceData) {
         if (creationData.id() == null) {
@@ -371,6 +355,26 @@ public class LoanProposal extends AggregateRoot<String> {
         validate(updateData.sourceData(), updateData.traceId());
 
         addEvent(LoanProposalEventMapper.INSTANCE.toUpdatedEvent(this));
+    }
+
+    public void delete(LoanProposalDeletionData deletionData) {
+        if (this.loanProposalStatus != LoanProposalStatus.PENDING) {
+            Map<String, LocalizedMessage> errors = Map.of("loanProposal",
+                    LocalizedMessage.builder()
+                            .key(DELETE_FAILED)
+                            .args(new Object[]{this.loanProposalStatus})
+                            .build());
+            throw new LoanProposalValidationException(
+                    LoanProposalFailedEvent.validationError(deletionData.traceId(), errors), errors);
+        }
+
+        this.tracerId = deletionData.traceId();
+        this.deleted = true;
+        this.deletedBy = deletionData.deletedBy();
+        this.deletedAt = deletionData.deletedAt();
+        this.status = DomainStatus.INACTIVE;
+
+        addEvent(LoanProposalEventMapper.INSTANCE.toDeletedEvent(this));
     }
 
     private static <T> T coalesce(T incoming, T current) {

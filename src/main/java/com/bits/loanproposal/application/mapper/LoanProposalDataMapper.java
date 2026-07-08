@@ -1,6 +1,7 @@
 package com.bits.loanproposal.application.mapper;
 
 import com.bits.loanproposal.application.command.CreateLoanProposalCommand;
+import com.bits.loanproposal.application.command.DeleteLoanProposalCommand;
 import com.bits.loanproposal.application.command.UpdateLoanProposalCommand;
 import com.bits.loanproposal.application.dto.LoanProposalSourceData;
 import com.bits.loanproposal.domain.entity.CoBorrower;
@@ -8,6 +9,7 @@ import com.bits.loanproposal.domain.entity.Guardian;
 import com.bits.loanproposal.domain.entity.Nominee;
 import com.bits.loanproposal.domain.entity.SecondInsurer;
 import com.bits.loanproposal.domain.param.LoanProposalCreationData;
+import com.bits.loanproposal.domain.param.LoanProposalDeletionData;
 import com.bits.loanproposal.domain.param.LoanProposalUpdateData;
 import com.bits.loanproposal.domain.value.AutoDebitCollection;
 import com.bits.loanproposal.domain.value.FireInsuranceDetails;
@@ -99,6 +101,19 @@ public interface LoanProposalDataMapper {
                 command.getLargeGroupLeaderName(),
                 command.getLargeGroupLeaderImage(),
                 command.getProposalReferenceNumber()
+        );
+    }
+
+    default LoanProposalDeletionData toDeletionData(DeleteLoanProposalCommand command) {
+        if (command == null) {
+            return null;
+        }
+        return new LoanProposalDeletionData(
+                command.getTracerId(),
+                command.getId(),
+                command.getBranchId(),
+                command.getDeletedBy(),
+                java.time.LocalDateTime.now()
         );
     }
 

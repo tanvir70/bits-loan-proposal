@@ -6,8 +6,6 @@ import com.bits.loanproposal.domain.aggregate.LoanProposalRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
-import java.util.Optional;
-
 import static com.bits.loanproposal.domain.constant.DomainErrorConstant.LOAN_PROPOSAL_NOT_FOUND;
 import static com.bits.loanproposal.domain.constant.DomainErrorConstant.NOT_FOUND;
 
@@ -18,10 +16,6 @@ public class LoanProposalQueryService {
     private final LoanProposalRepository repository;
 
     public LoanProposal fetchByIdOrHandleFailure(String id, String traceId) {
-        Optional<LoanProposal> proposal = repository.findById(id);
-        if (proposal.isEmpty()) {
-            throw new DomainValidationException(NOT_FOUND, LOAN_PROPOSAL_NOT_FOUND);
-        }
-        return proposal.get();
+        return repository.findById(id).orElseThrow(() -> new DomainValidationException(NOT_FOUND, LOAN_PROPOSAL_NOT_FOUND));
     }
 }
