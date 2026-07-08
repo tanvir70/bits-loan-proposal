@@ -10,6 +10,8 @@ import com.bits.loanproposal.domain.entity.*;
 import com.bits.loanproposal.domain.value.*;
 import com.bits.loanproposal.domain.param.LoanProposalCreationData;
 import com.bits.loanproposal.domain.param.LoanProposalUpdateData;
+import com.bits.loanproposal.domain.event.LoanProposalFailedEvent;
+import com.bits.loanproposal.domain.exception.LoanProposalValidationException;
 import com.bits.loanproposal.domain.mapper.LoanProposalEventMapper;
 import com.bits.loanproposal.domain.specification.context.LoanProposalValidationContext;
 import com.bits.loanproposal.domain.specification.rules.AgeLimitSpecification;
@@ -39,6 +41,7 @@ import static com.bits.loanproposal.domain.constant.DomainErrorConstant.ID_NULL;
 import static com.bits.loanproposal.domain.constant.DomainErrorConstant.PROPOSAL_ID_MUST_NOT_BE_NULL;
 import static com.bits.loanproposal.domain.constant.DomainErrorConstant.UPDATE_FAILED;
 import static com.bits.loanproposal.domain.constant.DomainErrorConstant.LOAN_PROPOSAL_UPDATE_FAILED;
+
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.springframework.data.annotation.Id;
@@ -49,6 +52,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Collectors;
 
@@ -184,7 +188,7 @@ public class LoanProposal extends AggregateRoot<String> {
         LoanProposal proposal = new LoanProposal();
         proposal.id = creationData.id();
         proposal.loanProposalId = creationData.loanProposalId();
-        proposal.proposalNumber = generateProposalNumber(creationData.applicationDate());
+        proposal.proposalNumber = generateProposalNumber(creationData.applicationDate(), creationData.sequence());
         proposal.proposalReferenceNumber = creationData.proposalReferenceNumber();
         proposal.branchId = creationData.branchId();
         proposal.branchCode = creationData.branchCode();
@@ -224,14 +228,15 @@ public class LoanProposal extends AggregateRoot<String> {
         proposal.secondInsurer = creationData.secondInsurer();
         proposal.wantsFireInsurance = creationData.wantsFireInsurance();
         proposal.fireInsuranceProductId = creationData.fireInsuranceProductId();
-        proposal.fireInsuranceDetails = creationData.fireInsuranceDetails();
+        proposal.fireInsuranceDetails = defaultFireInsuranceDetails(creationData.fireInsuranceDetails(),
+                creationData.proposedLoanAmount(), creationData.proposalDurationInMonths());
         proposal.modeOfPayment = creationData.modeOfPayment();
         proposal.autoDebitCollection = creationData.autoDebitCollection();
         proposal.isDigitalDisbursement = creationData.isDigitalDisbursement();
         proposal.transactionDescription = creationData.transactionDescription();
-        proposal.nominees = creationData.nominees();
-        proposal.guardian = creationData.guardian();
-        proposal.coBorrower = creationData.coBorrower();
+        proposal.nominees = assignNomineeIds(creationData.nominees());
+        proposal.guardian = linkGuardianToFirstNominee(creationData.guardian(), proposal.nominees);
+        proposal.coBorrower = assignCoBorrowerId(creationData.coBorrower());
         proposal.guarantors = creationData.guarantors();
         proposal.specialSavingsAccountIds = creationData.specialSavingsAccountIds();
         proposal.specialSavingsAccountNumbers = creationData.specialSavingsAccountNumbers();
@@ -297,7 +302,7 @@ public class LoanProposal extends AggregateRoot<String> {
         proposal.approvalLogId = creationData.approvalLogId();
         proposal.changeLogId = creationData.changeLogId();
 
-        proposal.validate(sourceData);
+        proposal.validate(sourceData, creationData.traceId());
 
         proposal.addEvent(LoanProposalEventMapper.INSTANCE.toCreatedEvent(proposal));
         return proposal;
@@ -361,7 +366,7 @@ public class LoanProposal extends AggregateRoot<String> {
         this.loanProposalStatus = LoanProposalStatus.PENDING;
         this.domainStatus = DomainStatus.UPDATED;
 
-        validate(updateData.sourceData());
+        validate(updateData.sourceData(), updateData.traceId());
 
         addEvent(LoanProposalEventMapper.INSTANCE.toUpdatedEvent(this));
     }
@@ -387,7 +392,7 @@ public class LoanProposal extends AggregateRoot<String> {
         return String.format("OTC-%s-%s-%s", this.branchCode, this.villageOrganisationCode, this.memberId);
     }
 
-    private void validate(LoanProposalSourceData sourceData) {
+    private void validate(LoanProposalSourceData sourceData, String traceId) {
         LoanProposalValidationContext context = new LoanProposalValidationContext(
                 sourceData.getMember(),
                 sourceData.getLoanProduct(),
@@ -427,18 +432,73 @@ public class LoanProposal extends AggregateRoot<String> {
                 .validate(context);
 
         if (!errors.isEmpty()) {
-            String detail = errors.entrySet().stream()
-                    .map(e -> e.getKey() + ": " + e.getValue().getKey())
-                    .collect(Collectors.joining("; "));
-            throw new DomainValidationException("LOAN_PROPOSAL_VALIDATION_FAILED", detail);
+            // DDD-REQ-032: structured errors + traceId travel on the failed event; the handler
+            // publishes it before rethrowing
+            throw new LoanProposalValidationException(
+                    LoanProposalFailedEvent.validationError(traceId, errors), errors);
         }
     }
 
-    private static String generateProposalNumber(LocalDate applicationDate) {
+    // DDD-REQ-002: {YYYY}{MM}-{seq:5}; sequence comes from ProposalNumberSequenceService via
+    // creationData. Random fallback only for callers that supply no sequence (e.g. tests).
+    static String generateProposalNumber(LocalDate applicationDate, Long sequence) {
         LocalDate date = applicationDate != null ? applicationDate : LocalDate.now();
-        // ponytail: random 5-digit suffix guarded by the unique proposalNumber+branch index; switch to a Mongo counter if collisions surface
-        return String.format("%d%02d-%05d", date.getYear(), date.getMonthValue(),
-                ThreadLocalRandom.current().nextInt(100_000));
+        long seq = sequence != null ? sequence : ThreadLocalRandom.current().nextInt(100_000);
+        return String.format("%d%02d-%05d", date.getYear(), date.getMonthValue(), seq);
+    }
+
+    // DDD-REQ-002: default insured amount -> proposedLoanAmount, duration -> max(duration, 12)
+    static FireInsuranceDetails defaultFireInsuranceDetails(FireInsuranceDetails details,
+                                                            BigDecimal proposedLoanAmount,
+                                                            Integer proposalDurationInMonths) {
+        if (details == null) {
+            return null;
+        }
+        BigDecimal insuredAmount = details.fireInsuranceInsuredAmount() != null
+                ? details.fireInsuranceInsuredAmount() : proposedLoanAmount;
+        Integer duration = details.durationOfFireInsurance();
+        if (duration == null) {
+            duration = proposalDurationInMonths != null ? Math.max(proposalDurationInMonths, 12) : 12;
+        }
+        return new FireInsuranceDetails(details.businessName(), details.businessAddress(),
+                details.businessPhone(), details.businessEmail(), details.divisionId(),
+                details.districtId(), details.thanaId(), details.businessTypeId(),
+                details.constructionOfPremisesId(), details.fireInsurancePremiumAmount(),
+                insuredAmount, duration, details.fireInsuranceProductName(),
+                details.bracCommissionAmount(), details.memberCommissionAmount());
+    }
+
+    // DDD-REQ-002: assign nominee IDs and share percentages ("Shares total 100%").
+    // ponytail: the doc defines no id scheme (UUID used) and no split rule beyond the update
+    // flow's "equal-split recalculation" — shares are equal-split only when the client left any blank
+    static List<Nominee> assignNomineeIds(List<Nominee> nominees) {
+        if (nominees == null || nominees.isEmpty()) {
+            return nominees;
+        }
+        nominees.stream().filter(n -> n.getId() == null)
+                .forEach(n -> n.setId(UUID.randomUUID().toString()));
+        if (nominees.stream().anyMatch(n -> n.getSharePercentage() == null)) {
+            double equalShare = 100.0 / nominees.size();
+            nominees.forEach(n -> n.setSharePercentage(equalShare));
+        }
+        return nominees;
+    }
+
+    // DDD-REQ-002: "guardian linked to first nominee".
+    // ponytail: neither Guardian nor Nominee has a link field in the doc or the entities;
+    // sharing the first nominee's id is the only representable link — verify against legacy
+    static Guardian linkGuardianToFirstNominee(Guardian guardian, List<Nominee> nominees) {
+        if (guardian != null && guardian.getId() == null && nominees != null && !nominees.isEmpty()) {
+            guardian.setId(nominees.get(0).getId());
+        }
+        return guardian;
+    }
+
+    static CoBorrower assignCoBorrowerId(CoBorrower coBorrower) {
+        if (coBorrower != null && coBorrower.getId() == null) {
+            coBorrower.setId(UUID.randomUUID().toString());
+        }
+        return coBorrower;
     }
 
     @Override

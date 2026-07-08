@@ -13,6 +13,7 @@ import com.bits.loanproposal.application.mapper.LoanProposalSourceDataMapper;
 import com.bits.loanproposal.application.service.LoanProposalQueryService;
 import com.bits.loanproposal.application.service.UpdateLoanProposalSourceDataProvider;
 import com.bits.loanproposal.domain.aggregate.LoanProposal;
+import com.bits.loanproposal.domain.exception.LoanProposalValidationException;
 import com.bits.loanproposal.domain.param.LoanProposalUpdateData;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -48,7 +49,12 @@ public class UpdateLoanProposalCommandHandler implements CommandHandler<UpdateLo
         LoanProposalSourceData sourceData = LoanProposalSourceDataMapper.toSourceData(sourceDataContext);
         LoanProposalUpdateData updateData = dataMapper.toUpdateData(command, sourceData);
 
-        loanProposal.update(updateData);
+        try {
+            loanProposal.update(updateData);
+        } catch (LoanProposalValidationException ex) {
+            CreateLoanProposalCommandHandler.publishFailedEvent(ex, messageProcessor);
+            throw ex;
+        }
 
         persistenceService.persist(loanProposal);
         messageProcessor.publish(loanProposal.getEvents());

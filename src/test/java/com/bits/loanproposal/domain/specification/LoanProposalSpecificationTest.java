@@ -119,6 +119,44 @@ class LoanProposalSpecificationTest {
         assertEquals("LOAN_AMOUNT_INVALID", errors.get("proposedLoanAmount").getKey());
     }
 
+    @Test
+    void installmentAmountMismatchWithRecalculatedFails() {
+        LoanProposal aggregate = new LoanProposal();
+        aggregate.setProposedLoanAmount(new BigDecimal("5000"));
+        aggregate.setInstallmentAmount(new BigDecimal("500"));
+        aggregate.setApprovedInstallmentAmount(new BigDecimal("520"));
+        Map<String, LocalizedMessage> errors = new LoanAmountSpecification()
+                .validate(new LoanProposalValidationContext(null, null, null, policy("1000", "500000"),
+                        null, null, null, null, null, null, null, null, aggregate));
+        assertEquals("INSTALLMENT_AMOUNT_WRONG", errors.get("installmentAmount").getKey());
+    }
+
+    @Test
+    void installmentConfigMismatchWithProductDetailsFails() {
+        LoanProposal aggregate = new LoanProposal();
+        aggregate.setProposedLoanAmount(new BigDecimal("5000"));
+        aggregate.setNumberOfInstallments(12);
+        aggregate.setProposalDurationInMonths(12);
+        aggregate.setInterestRate(new BigDecimal("24"));
+        com.bits.loanproposal.application.dto.sourcedata.LoanProductDetails details =
+                com.bits.loanproposal.application.dto.sourcedata.LoanProductDetails.builder()
+                        .installmentCount(24)
+                        .durationMonths(12)
+                        .interestRate(new BigDecimal("24"))
+                        .build();
+        Map<String, LocalizedMessage> errors = new LoanAmountSpecification()
+                .validate(new LoanProposalValidationContext(null, null, details, policy("1000", "500000"),
+                        null, null, null, null, null, null, null, null, aggregate));
+        assertEquals("INSTALLMENT_CONFIG_MISMATCH", errors.get("installment").getKey());
+
+        // matching config passes
+        aggregate.setNumberOfInstallments(24);
+        Map<String, LocalizedMessage> matching = new LoanAmountSpecification()
+                .validate(new LoanProposalValidationContext(null, null, details, policy("1000", "500000"),
+                        null, null, null, null, null, null, null, null, aggregate));
+        assertTrue(matching.isEmpty(), () -> "expected no errors but got: " + matching);
+    }
+
     private LoanProposalValidationContext fullContext(LoanProposal aggregate, Member member,
                                                       LoanProduct product, Project project,
                                                       ProjectPolicy projectPolicy, VillageOrganisation vo,
