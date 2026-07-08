@@ -15,12 +15,16 @@ import com.bits.loanproposal.application.service.LoanProposalSourceDataProvider;
 import com.bits.loanproposal.application.service.ProposalNumberSequenceService;
 import com.bits.loanproposal.domain.aggregate.LoanProposal;
 import com.bits.loanproposal.domain.aggregate.LoanProposalRepository;
+import com.bits.ddd.shared.localization.LocalizedMessage;
+import com.bits.loanproposal.domain.event.LoanProposalFailedEvent;
 import com.bits.loanproposal.domain.exception.LoanProposalValidationException;
 import com.bits.loanproposal.domain.param.LoanProposalCreationData;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 
 import static com.bits.loanproposal.domain.constant.DomainErrorConstant.ALREADY_EXISTS;
 import static com.bits.loanproposal.domain.constant.DomainErrorConstant.LOAN_PROPOSAL_ALREADY_EXISTS;
@@ -62,8 +66,19 @@ public class CreateLoanProposalCommandHandler implements CommandHandler<CreateLo
         SourceDataContext context = sourceDataProvider.provide(command);
         LoanProposalSourceData sourceData = LoanProposalSourceDataMapper.toSourceData(context);
 
-        // a validation failure below burns this sequence number — gaps in proposal numbers are acceptable
-        long sequence = sequenceService.next(dataMapper.deriveApplicationDate(sourceData));
+        // partial day-open rule: a branch without a business date cannot take proposals;
+        // the full "day is open" check is blocked on a legacy signal (legacy-questions.md 3.3)
+        LocalDate applicationDate = dataMapper.deriveApplicationDate(sourceData);
+        if (applicationDate == null) {
+            Map<String, LocalizedMessage> errors = Map.of("applicationDate",
+                    LocalizedMessage.builder().key("BUSINESS_DATE_NOT_AVAILABLE").build());
+            LoanProposalValidationException noBusinessDate = new LoanProposalValidationException(
+                    LoanProposalFailedEvent.validationError(command.getTracerId(), errors), errors);
+            publishFailedEvent(noBusinessDate, messageProcessor);
+            throw noBusinessDate;
+        }
+
+        long sequence = sequenceService.next(applicationDate);
         LoanProposalCreationData creationData = dataMapper.toCreationData(command, sourceData, sequence);
         LoanProposal loanProposal;
         try {
@@ -77,8 +92,6 @@ public class CreateLoanProposalCommandHandler implements CommandHandler<CreateLo
         messageProcessor.publish(loanProposal.getEvents());
     }
 
-    // Fire-and-forget: the aggregate is never persisted on validation failure, so this event
-    // has no outbox row; a broker outage here must not turn the client's 400 into a 500.
     static void publishFailedEvent(LoanProposalValidationException loanProposalValidationException, MessageProcessor messageProcessor) {
         try {
             messageProcessor.publish(List.of(loanProposalValidationException.getFailedEvent()));

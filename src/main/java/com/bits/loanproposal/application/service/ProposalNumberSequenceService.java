@@ -10,9 +10,9 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
 
-// DDD-REQ-002: supplies the monthly sequence for proposal numbers ({YYYY}{MM}-{seq:5}).
-// findAndModify with $inc + upsert is atomic, so concurrent creates never share a number;
-// a fresh counter document per month resets the sequence naturally.
+// DDD-REQ-002: supplies the sequence for proposal numbers ({YYYY}{MM}-{seq:5}).
+// not defined in ears: counter scope is a guess — global per month here, but the unique index
+// (proposalNumber + branchId) hints legacy may number per branch; if so, key by {branchCode}-{yearMonth}.
 @Service
 public class ProposalNumberSequenceService {
 
@@ -25,8 +25,8 @@ public class ProposalNumberSequenceService {
     }
 
     public long next(LocalDate businessDate) {
-        LocalDate date = businessDate != null ? businessDate : LocalDate.now();
-        String yearMonth = String.format("%d%02d", date.getYear(), date.getMonthValue());
+        // caller guarantees a business date; a null here is a bug, not a case to paper over
+        String yearMonth = String.format("%d%02d", businessDate.getYear(), businessDate.getMonthValue());
         Document counter = mongoTemplate.findAndModify(
                 Query.query(Criteria.where("_id").is(yearMonth)),
                 new Update().inc("seq", 1),

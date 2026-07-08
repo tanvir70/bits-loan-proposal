@@ -17,6 +17,7 @@ import com.bits.loanproposal.presentation.controller.dto.*;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 
+import java.time.LocalDate;
 import java.util.List;
 
 @Mapper(componentModel = "spring")
@@ -32,9 +33,18 @@ public interface LoanProposalDataMapper {
     @Mapping(target = "guarantors", expression = "java(java.util.Collections.emptyList())")
     @Mapping(target = "loanProposalId", ignore = true)
     @Mapping(target = "proposalNumber", ignore = true)
-    @Mapping(target = "premiumAmount", ignore = true)
-    @Mapping(target = "applicationDate", expression = "java(java.time.LocalDate.now())")
-    LoanProposalCreationData toCreationData(CreateLoanProposalCommand command, LoanProposalSourceData sourceData);
+    // not defined in ears: create request carries no premium; sourced from the selected
+    // insurance product snapshot (the only premium on the create path) — verify against legacy
+    @Mapping(target = "premiumAmount", source = "sourceData.insuranceProduct.premiumAmount")
+    @Mapping(target = "sequence", source = "sequence")
+    @Mapping(target = "applicationDate", expression = "java(deriveApplicationDate(sourceData))")
+    LoanProposalCreationData toCreationData(CreateLoanProposalCommand command, LoanProposalSourceData sourceData, long sequence);
+
+    default LocalDate deriveApplicationDate(LoanProposalSourceData sourceData) {
+        return sourceData != null && sourceData.getBranch() != null
+                ? sourceData.getBranch().getLastAccountingBusinessDate()
+                : null;
+    }
 
     default LoanProposalUpdateData toUpdateData(UpdateLoanProposalCommand command, LoanProposalSourceData sourceData) {
         if (command == null) {
@@ -105,6 +115,9 @@ public interface LoanProposalDataMapper {
         if (!isDigital) return null;
         String branchCode = sourceData.getBranch() != null ? sourceData.getBranch().getCode() : null;
         String voCode = sourceData.getVillageOrganisation() != null ? sourceData.getVillageOrganisation().getCode() : null;
+        if (branchCode == null || voCode == null || command.getMemberId() == null) {
+            return null; // no description over a literal "null" segment
+        }
         return String.format("OTC-%s-%s-%s", branchCode, voCode, command.getMemberId());
     }
 

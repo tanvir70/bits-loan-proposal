@@ -1,88 +1,83 @@
 # Create Behavior — Missing Implementation Report
 
 Line-by-line diff of the DDD-EARS doc's `create()` pseudocode (DDD-REQ-002) and its
-create-path requirements against the current implementation. Field population and the
-21-specification chain are complete; the gaps below remain. Ranked by impact.
+create-path requirements against the current implementation. Refreshed 2026-07-08 —
+field population, the 21-specification chain, the field-population helpers, the
+failed-event path, and the sequenced proposal number are complete; the gaps below remain.
+Ranked by impact.
 
-Companion doc: [spec-deviations.md](spec-deviations.md) covers deviations *inside* the 21
-specifications; this file covers what the create behavior itself still misses.
+Companion docs: [spec-deviations.md](spec-deviations.md) covers deviations *inside* the 21
+specifications; [legacy-questions.md](legacy-questions.md) tracks every open question for
+the legacy system referenced below.
 
 ---
 
-## 1. `LoanAmountSpecification` is a slim stand-in for REQ-013 (biggest gap)
+## Still open
 
-The doc's spec #5 is `LoanAmountGrantInstallmentSpecification` with 7 sub-rules. Ours only
-does policy range + negative-amount/grant checks. Missing — and notably **three of these
-are implementable today with data we already have**:
+### 1. Three REQ-013 sub-rules — blocked on undefined specs
 
-| Missing sub-rule | Data status |
+`LoanAmountSpecification` now covers policy range, negative amounts, installment-amount
+match, and product-details config match. Still missing, all blocked on legacy answers
+(legacy-questions 1.1–1.3):
+
+| Missing sub-rule | Blocker |
 |---|---|
-| `installmentAmount` vs `approvedInstallmentAmount` (recalculated) → "Your provided installment amount is wrong" | **Implementable now** — both fields sit on the aggregate |
-| Installment count / duration / interest rate vs `LoanProductDetails.installmentCount/durationMonths/interestRate` → INSTALLMENT_CONFIG_MISMATCH | **Implementable now** — DTO fields exist, unused |
-| Grant match via `computeGrantAmount(policy, scheme, agg)` → "Your provide grant amount is wrong" | Partially — `LoanProductPolicy.grantPercentage` and `Scheme.assetGrantPercentageByVoCategory` exist, but the doc's formula is undefined |
-| Variable installments selected but no variable-installment config | Not implementable — no config lookup exists |
-| `isValidInterestRate(amount, rate, businessDate)` → "Interest rate is not valid." | Not implementable — helper undefined, no rate table |
+| Grant match via `computeGrantAmount(policy, scheme, agg)` | Formula undefined |
+| Variable installments selected but no variable-installment config | No config source exists |
+| `isValidInterestRate(amount, rate, businessDate)` | Helper undefined, no rate table |
 
-## 2. Aggregate field-population helpers — all four skipped silently
+### 2. `guarantors` hardcoded to `emptyList()`
 
-The doc's `create()` calls four transformers that were replaced with plain copies. Unlike
-the spec deviations, these were **not** flagged with `ponytail:` comments in code — they
-are undocumented misses:
+The doc says "attached from member record", but the member source-data snapshot carries no
+guarantor data. Needs the snapshot extended first (legacy-questions 4.1). Until then the
+mapper's `emptyList()` stands.
 
-| Doc helper | What it should do | Current behavior |
-|---|---|---|
-| `defaultFireInsuranceDetails(creationData)` | Default insured amount → `proposedLoanAmount` if absent; default duration → `max(proposalDurationInMonths, 12)` if absent | Copied as-is. Compounds with `FireInsuranceSpecification`: its insured-amount mismatch check skips when the field is null, so an un-defaulted proposal is never checked |
-| `assignNomineeIds(nominees)` | Assign nominee IDs + share percentages ("Shares total 100%") | Copied as-is — no IDs, no shares |
-| `linkGuardianToFirstNominee(guardian, nominees)` | Link the guardian entity to the first nominee | Copied as-is |
-| `assignCoBorrowerId(coBorrower)` | Assign the co-borrower ID | Copied as-is |
+### 3. Full day-open validation
 
-## 3. Validation failure path doesn't match the doc
+Business rule (not in EARS): a proposal cannot be created when the branch business day is
+not open. A partial version is live — the handler rejects creation with
+`BUSINESS_DATE_NOT_AVAILABLE` when the branch has no `lastAccountingBusinessDate` — but the
+real "day is open" signal doesn't exist in our source data (legacy-questions 3.3).
 
-- *Doc says:* `THROW LoanProposalValidationException(LoanProposalFailedEvent.validationError(traceId, errors))`
-  — a **failed event** carrying the traceId and the structured error map.
-- *Code does:* `throw new DomainValidationException("LOAN_PROPOSAL_VALIDATION_FAILED", joinedString)`.
-- *Consequences:* no `LoanProposalFailedEvent` is produced, the traceId is lost from the
-  error, and the `LocalizedMessage` keys/args are flattened into one string — which also
-  defeats the library's MessageSource translation machinery downstream.
+### 4. Sequence counter scope
 
-## 4. Proposal number: random, not sequenced
+`ProposalNumberSequenceService` counts globally per month; the unique index
+(`proposalNumber + branchId`) hints legacy may number per branch. One-line key change
+(`{branchCode}-{yearMonth}`) once confirmed (legacy-questions 3.1).
 
-- *Doc says:* `generateProposalNumber(creationData.businessDate, creationData.sequence)` →
-  format `{YYYY}{MM}-{seq:5}`.
-- *Code does:* `ThreadLocalRandom.nextInt(100_000)` (known `ponytail:` shortcut).
-- *Gaps:* collisions possible under load; `LoanProposalCreationData` has no `sequence`
-  field at all. Needs a Mongo counter collection (e.g. `findAndModify` with `$inc`) keyed
-  by year-month.
+### 5. Derivations live in the wrong layer, with invented internals (known, commented)
 
-## 5. Mapper hardcodes that contradict the doc
+`deriveIsDigital` and `deriveTransactionDescription` sit in the MapStruct mapper
+(application layer), not inside `create()` as the doc places them, and their internals are
+guesses — the doc never defines them (legacy-questions 2.1–2.2). The former side-bug
+(null voCode → literal `"null"` in the description) is fixed: missing parts now yield a
+null description. `premiumAmount` sourcing is likewise a guess: the create request carries
+no premium, so it's taken from the insurance-product snapshot.
 
-In `LoanProposalDataMapper`:
-
-| Field | Doc | Current | Impact |
-|---|---|---|---|
-| `premiumAmount` | copied from creation data | `@Mapping(ignore = true)` → **always null** | Two specs read it (negative-premium check in DigitalDisbursement; second-insurer premium flow) — both permanently see null |
-| `guarantors` | "attached from member record" | hardcoded `emptyList()` | Guarantor data never reaches the aggregate |
-| `applicationDate` | business date (likely `Branch.lastAccountingBusinessDate` — the field exists on the Branch snapshot, unused) | `LocalDate.now()` | Product/policy active-on checks and age calculations run against the server date, not the accounting business date |
-
-## 6. Derivations live in the wrong layer (known, already commented)
-
-`derivedDigitalDisbursementFlag` and `deriveCustomerReference` are implemented in the
-MapStruct mapper (application layer), not inside `create()` as the doc places them — and
-their internals are invented (the doc never defines them; source EARS file not in repo).
-Both carry "not defined in ears" comments in code. Known side-bug: a null voCode produces
-a literal `"null"` in the transaction description.
-
-## 7. Cosmetic only
+### 6. Cosmetic only
 
 `domainStatus = CREATED` is assigned mid-field-population instead of after validation (doc
 line ~438). No observable difference — validation throws before persist either way.
 
 ---
 
+## Resolved since the original report
+
+| Original gap | Resolution |
+|---|---|
+| #1 (partial) two implementable REQ-013 sub-rules | Installment-amount match + product-details config match in `LoanAmountSpecification` (commit `8ed6984`) |
+| #2 four field-population helpers skipped | `defaultFireInsuranceDetails`, `assignNomineeIds`, `linkGuardianToFirstNominee`, `assignCoBorrowerId` implemented on the aggregate and called from `create()` (commit `cff634b`) |
+| #3 validation failure path | `LoanProposalValidationException` carries `LoanProposalFailedEvent.validationError(traceId, errors)`; handler publishes the failed event (commit `6efd984`) |
+| #4 random proposal number | Mongo `findAndModify` counter in `ProposalNumberSequenceService`, keyed by year-month; `sequence` field added to creation data |
+| #5 `premiumAmount` always null | Mapped from `sourceData.insuranceProduct.premiumAmount` (guess — flagged in code) |
+| #5 `applicationDate = LocalDate.now()` | Derived from `Branch.lastAccountingBusinessDate`; null when absent (no fallback to today), which the handler rejects before consuming a sequence number |
+| #6 side-bug: null voCode → literal `"null"` | Missing description parts now yield a null transaction description |
+
 ## Verified present (not missing)
 
 - id-null guard in `create()`
 - duplicate-id check in the handler (Gate 5b idempotency)
+- missing-business-date rejection before the sequence is consumed (partial day-open rule)
 - all ~100 field copies, including `approvedLoanAmount = proposedLoanAmount`,
   `approvedNumberOfInstallments = numberOfInstallments`,
   `approvedInstallmentAmount = recalculatedInstallmentAmount`,
@@ -91,14 +86,12 @@ line ~438). No observable difference — validation throws before persist either
   `dataSource = OTC`, `loanSecurity* ?? 0` defaults
 - all 21 specifications chained in doc order inside `validate()`
 - `LoanProposalCreatedEvent` emission via `LoanProposalEventMapper`
+- failed-event publication on validation failure (fire-and-forget, no outbox row)
 - persist + outbox publish via the library's `DomainPersistenceService` / `MessageProcessor`
 
-## Suggested fix order (value per line of code)
+## Suggested next steps (value per line of code)
 
-1. Add the two implementable REQ-013 sub-rules (installment-amount match, details match).
-2. Stop ignoring `premiumAmount` in the mapper.
-3. Implement the four field-population helpers (#2) — small, pure functions on the aggregate.
-4. Proposal-number Mongo counter (#4).
-5. Failed-event error path (#3) — needs a `LoanProposalFailedEvent` type decision first.
-6. Business-date sourcing (#5, applicationDate) — confirm with legacy whether
-   `Branch.lastAccountingBusinessDate` is the intended business date.
+1. Get legacy answers for the high-priority rows in [legacy-questions.md](legacy-questions.md)
+   — 3.1 (sequence scope) and 3.3 (day-open signal) are one-line and small fixes respectively.
+2. Extend the member snapshot with guarantor data, then drop the `emptyList()` hardcode.
+3. Implement the three REQ-013 sub-rules as their definitions arrive.
