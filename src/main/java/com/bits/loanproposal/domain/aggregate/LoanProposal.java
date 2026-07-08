@@ -99,7 +99,6 @@ public class LoanProposal extends AggregateRoot<String> {
     private String approvalFlowStatus;
     private String approvalStatus;
     private ApiDataSource dataSource;
-    private DomainStatus domainStatus;
     private Boolean microInsurance;
     private Long policyTypeId;
     private Long insuranceProductId;
@@ -220,7 +219,10 @@ public class LoanProposal extends AggregateRoot<String> {
         proposal.loanProposalStatus = LoanProposalStatus.PENDING;
         proposal.loanProposalType = creationData.loanProposalType() != null ? creationData.loanProposalType() : LoanProposalType.NORMAL_LOAN;
         proposal.dataSource = ApiDataSource.OTC;
-        proposal.domainStatus = DomainStatus.CREATED;
+        proposal.status = DomainStatus.CREATED;
+        // library AggregateRoot fields: persistence NPEs on a null version
+        proposal.version = 0L;
+        proposal.tracerId = creationData.traceId();
         proposal.microInsurance = creationData.microInsurance();
         proposal.policyTypeId = creationData.policyTypeId();
         proposal.insuranceProductId = creationData.insuranceProductId();
@@ -364,7 +366,7 @@ public class LoanProposal extends AggregateRoot<String> {
         this.isDigitalDisbursement = deriveDigitalDisbursementFlag(this.modeOfPayment);
         this.transactionDescription = deriveTransactionDescription(this.modeOfPayment);
         this.loanProposalStatus = LoanProposalStatus.PENDING;
-        this.domainStatus = DomainStatus.UPDATED;
+        this.status = DomainStatus.UPDATED;
 
         validate(updateData.sourceData(), updateData.traceId());
 
@@ -439,38 +441,32 @@ public class LoanProposal extends AggregateRoot<String> {
         }
     }
 
-    // DDD-REQ-002: {YYYY}{MM}-{seq:5}; sequence comes from ProposalNumberSequenceService via
-    // creationData. Random fallback only for callers that supply no sequence (e.g. tests).
     static String generateProposalNumber(LocalDate applicationDate, Long sequence) {
         LocalDate date = applicationDate != null ? applicationDate : LocalDate.now();
         long seq = sequence != null ? sequence : ThreadLocalRandom.current().nextInt(100_000);
         return String.format("%d%02d-%05d", date.getYear(), date.getMonthValue(), seq);
     }
 
-    // DDD-REQ-002: default insured amount -> proposedLoanAmount, duration -> max(duration, 12)
-    static FireInsuranceDetails defaultFireInsuranceDetails(FireInsuranceDetails details,
+    static FireInsuranceDetails defaultFireInsuranceDetails(FireInsuranceDetails fireInsuranceDetails,
                                                             BigDecimal proposedLoanAmount,
                                                             Integer proposalDurationInMonths) {
-        if (details == null) {
+        if (fireInsuranceDetails == null) {
             return null;
         }
-        BigDecimal insuredAmount = details.fireInsuranceInsuredAmount() != null
-                ? details.fireInsuranceInsuredAmount() : proposedLoanAmount;
-        Integer duration = details.durationOfFireInsurance();
+        BigDecimal insuredAmount = fireInsuranceDetails.fireInsuranceInsuredAmount() != null
+                ? fireInsuranceDetails.fireInsuranceInsuredAmount() : proposedLoanAmount;
+        Integer duration = fireInsuranceDetails.durationOfFireInsurance();
         if (duration == null) {
             duration = proposalDurationInMonths != null ? Math.max(proposalDurationInMonths, 12) : 12;
         }
-        return new FireInsuranceDetails(details.businessName(), details.businessAddress(),
-                details.businessPhone(), details.businessEmail(), details.divisionId(),
-                details.districtId(), details.thanaId(), details.businessTypeId(),
-                details.constructionOfPremisesId(), details.fireInsurancePremiumAmount(),
-                insuredAmount, duration, details.fireInsuranceProductName(),
-                details.bracCommissionAmount(), details.memberCommissionAmount());
+        return new FireInsuranceDetails(fireInsuranceDetails.businessName(), fireInsuranceDetails.businessAddress(),
+                fireInsuranceDetails.businessPhone(), fireInsuranceDetails.businessEmail(), fireInsuranceDetails.divisionId(),
+                fireInsuranceDetails.districtId(), fireInsuranceDetails.thanaId(), fireInsuranceDetails.businessTypeId(),
+                fireInsuranceDetails.constructionOfPremisesId(), fireInsuranceDetails.fireInsurancePremiumAmount(),
+                insuredAmount, duration, fireInsuranceDetails.fireInsuranceProductName(),
+                fireInsuranceDetails.bracCommissionAmount(), fireInsuranceDetails.memberCommissionAmount());
     }
 
-    // DDD-REQ-002: assign nominee IDs and share percentages ("Shares total 100%").
-    // ponytail: the doc defines no id scheme (UUID used) and no split rule beyond the update
-    // flow's "equal-split recalculation" — shares are equal-split only when the client left any blank
     static List<Nominee> assignNomineeIds(List<Nominee> nominees) {
         if (nominees == null || nominees.isEmpty()) {
             return nominees;
@@ -484,9 +480,7 @@ public class LoanProposal extends AggregateRoot<String> {
         return nominees;
     }
 
-    // DDD-REQ-002: "guardian linked to first nominee".
-    // ponytail: neither Guardian nor Nominee has a link field in the doc or the entities;
-    // sharing the first nominee's id is the only representable link — verify against legacy
+    //need to verify against legacy code
     static Guardian linkGuardianToFirstNominee(Guardian guardian, List<Nominee> nominees) {
         if (guardian != null && guardian.getId() == null && nominees != null && !nominees.isEmpty()) {
             guardian.setId(nominees.get(0).getId());

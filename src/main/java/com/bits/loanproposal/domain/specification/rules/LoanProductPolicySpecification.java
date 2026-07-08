@@ -40,7 +40,7 @@ public class LoanProductPolicySpecification implements Specification<LoanProposa
         if (!loanProduct.isActiveOn(businessDate)) {
             errors.put("loanProduct", LocalizedMessage.builder().key("LOAN_PRODUCT_EXPIRED").build());
         }
-        // ponytail: doc's "officeId" has no aggregate field; branch is the office in this context
+        // doc's "officeId" has no aggregate field; branch is the office in this context
         if (!loanProduct.isMappedWith(context.project(), aggregate.getBranchId(),
                 aggregate.getMemberClassificationId(), aggregate.getFrequencyId())) {
             errors.put("loanProduct", LocalizedMessage.builder().key("LOAN_PRODUCT_MAPPING_INVALID").build());

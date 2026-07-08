@@ -49,7 +49,7 @@ public class BranchProjectVoConsistencySpecification implements Specification<Lo
         return errors;
     }
 
-    // ponytail: doc pseudocode flags missing VO unconditionally, which would reject every
+    // doc pseudocode flags missing VO unconditionally, which would reject every
     // non-group proposal (VO source data is only fetched when a voCode is supplied);
     // scoped the not-found check to group-based projects instead.
     private void validateVillageOrganisation(LoanProposalValidationContext context,

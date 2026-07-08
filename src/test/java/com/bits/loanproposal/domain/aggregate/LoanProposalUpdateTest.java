@@ -29,7 +29,6 @@ class LoanProposalUpdateTest {
         LoanProposal proposal = new LoanProposal();
         proposal.setId("lp-1");
         proposal.setLoanProposalStatus(LoanProposalStatus.PENDING);
-        proposal.setDomainStatus(DomainStatus.CREATED);
         proposal.setProposedLoanAmount(new BigDecimal("1000"));
         proposal.setApprovedLoanAmount(new BigDecimal("1000"));
         proposal.setInstallmentAmount(new BigDecimal("100"));
@@ -158,7 +157,7 @@ class LoanProposalUpdateTest {
         assertEquals(new BigDecimal("2000"), proposal.getProposedLoanAmount());
         assertEquals(new BigDecimal("2000"), proposal.getApprovedLoanAmount());
         assertEquals(new BigDecimal("200"), proposal.getInstallmentAmount());
-        assertEquals(DomainStatus.UPDATED, proposal.getDomainStatus());
+        assertEquals(DomainStatus.UPDATED, proposal.getStatus());
         assertEquals(LoanProposalStatus.PENDING, proposal.getLoanProposalStatus());
         assertEquals(1, proposal.getEvents().size());
         assertInstanceOf(LoanProposalUpdatedEvent.class, proposal.getEvents().get(0));

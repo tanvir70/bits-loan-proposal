@@ -16,13 +16,13 @@ public class RepaymentFrequencyModeOfPaymentSpecification implements Specificati
     public Map<String, LocalizedMessage> validate(LoanProposalValidationContext context) {
         Map<String, LocalizedMessage> errors = new HashMap<>();
         Long frequencyId = context.aggregate().getFrequencyId();
-        // ponytail: doc's isRecognisedFrequency() is undefined; 1..10 range per the ">10 invalid" rule
+        //  ear's isRecognisedFrequency() is undefined; 1..10 range per the ">10 invalid" rule
         if (frequencyId == null || frequencyId < 1 || frequencyId > 10) {
             errors.put("frequency", LocalizedMessage.builder().key("LOAN_FREQUENCY_NOT_FOUND").build());
         }
         OtcModeOfPayment modeOfPayment = context.aggregate().getModeOfPayment();
         if (modeOfPayment != null) {
-            // ponytail: subType is an enum, so any recognised value is valid; null means unmapped/invalid input
+            // subType is an enum, so any recognised value is valid; null means unmapped/invalid input
             if (modeOfPayment.subType() == null) {
                 errors.put("modeOfPayment",
                         LocalizedMessage.builder().key("INVALID_MODE_OF_PAYMENT_SUBTYPE").build());

@@ -51,7 +51,7 @@ public class LoanAmountSpecification implements Specification<LoanProposalValida
             errors.put("installment",
                     LocalizedMessage.builder().key("INSTALLMENT_CONFIG_MISMATCH").build());
         }
-        // ponytail: three REQ-013 sub-rules skipped — computeGrantAmount formula,
+        // three REQ-013 subrules skipped — computeGrantAmount formula,
         // variable-installment config lookup, and isValidInterestRate are all undefined in the
         // doc and have no source data to check against; see docs/create-flow-gaps.md #1
         return errors;

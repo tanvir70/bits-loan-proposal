@@ -17,8 +17,7 @@ public class LoanExposureLimitSpecification implements Specification<LoanProposa
         if (context.projectPolicy() == null || !context.projectPolicy().isEnforcesLoanExposureLimit()) {
             return errors;
         }
-        // ponytail: doc reads the limit off projectPolicy, but in our source data the
-        // office-and-project exposure limit lives on LoanProductPolicy
+        // doc reads the limit off projectPolicy, but in our source data the office-and-project exposure limit lives on LoanProductPolicy
         BigDecimal limit = context.loanProductPolicy() != null
                 ? context.loanProductPolicy().getOfficeAndProjectExposureLimit() : null;
         BigDecimal amount = context.aggregate().getProposedLoanAmount();

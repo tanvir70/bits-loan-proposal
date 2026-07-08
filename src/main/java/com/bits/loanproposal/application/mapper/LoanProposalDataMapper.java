@@ -34,7 +34,7 @@ public interface LoanProposalDataMapper {
     @Mapping(target = "loanProposalId", ignore = true)
     @Mapping(target = "proposalNumber", ignore = true)
     // not defined in ears: create request carries no premium; sourced from the selected
-    // insurance product snapshot (the only premium on the create path) — verify against legacy
+    // insurance product snapshot (the only premium on the creation path) — verify against legacy
     @Mapping(target = "premiumAmount", source = "sourceData.insuranceProduct.premiumAmount")
     @Mapping(target = "sequence", source = "sequence")
     @Mapping(target = "applicationDate", expression = "java(deriveApplicationDate(sourceData))")
