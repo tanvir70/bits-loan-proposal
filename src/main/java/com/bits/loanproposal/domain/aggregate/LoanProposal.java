@@ -9,7 +9,6 @@ import com.bits.loanproposal.domain.entity.*;
 import com.bits.loanproposal.domain.enums.ApiDataSource;
 import com.bits.loanproposal.domain.enums.LoanProposalStatus;
 import com.bits.loanproposal.domain.enums.LoanProposalType;
-import com.bits.loanproposal.domain.event.LoanProposalFailedEvent;
 import com.bits.loanproposal.domain.exception.LoanProposalValidationException;
 import com.bits.loanproposal.domain.mapper.LoanProposalEventMapper;
 import com.bits.loanproposal.domain.param.LoanProposalCreationData;
@@ -364,8 +363,7 @@ public class LoanProposal extends AggregateRoot<String> {
                             .key(DELETE_FAILED)
                             .args(new Object[]{this.loanProposalStatus})
                             .build());
-            throw new LoanProposalValidationException(
-                    LoanProposalFailedEvent.validationError(deletionData.traceId(), errors), errors);
+            throw new LoanProposalValidationException(errors);
         }
 
         this.tracerId = deletionData.traceId();
@@ -438,10 +436,7 @@ public class LoanProposal extends AggregateRoot<String> {
                 .validate(context);
 
         if (!errors.isEmpty()) {
-            // DDD-REQ-032: structured errors + traceId travel on the failed event; the handler
-            // publishes it before rethrowing
-            throw new LoanProposalValidationException(
-                    LoanProposalFailedEvent.validationError(traceId, errors), errors);
+            throw new LoanProposalValidationException(errors);
         }
     }
 

@@ -4,7 +4,7 @@ import com.bits.ddd.annotation.PersistDomain;
 import com.bits.ddd.annotation.RegisterCommandHandler;
 import com.bits.ddd.handler.CommandHandler;
 import com.bits.ddd.service.DomainPersistenceService;
-import com.bits.ddd.service.MessageProcessor;
+import com.bits.ddd.shared.service.MessagePublisher;
 import com.bits.ddd.service.SourceDataContext;
 import com.bits.loanproposal.application.command.UpdateLoanProposalCommand;
 import com.bits.loanproposal.application.dto.LoanProposalSourceData;
@@ -25,18 +25,18 @@ public class UpdateLoanProposalCommandHandler implements CommandHandler<UpdateLo
     @PersistDomain
     private final DomainPersistenceService<LoanProposal, String> persistenceService;
     private final UpdateLoanProposalSourceDataProvider sourceDataProvider;
-    private final MessageProcessor messageProcessor;
+    private final MessagePublisher messagePublisher;
     private final LoanProposalQueryService queryService;
     private final LoanProposalDataMapper dataMapper;
 
     public UpdateLoanProposalCommandHandler(DomainPersistenceService<LoanProposal, String> persistenceService,
                                             UpdateLoanProposalSourceDataProvider sourceDataProvider,
-                                            MessageProcessor messageProcessor,
+                                            MessagePublisher messagePublisher,
                                             LoanProposalQueryService queryService,
                                             LoanProposalDataMapper dataMapper) {
         this.persistenceService = persistenceService;
         this.sourceDataProvider = sourceDataProvider;
-        this.messageProcessor = messageProcessor;
+        this.messagePublisher = messagePublisher;
         this.queryService = queryService;
         this.dataMapper = dataMapper;
     }
@@ -49,15 +49,10 @@ public class UpdateLoanProposalCommandHandler implements CommandHandler<UpdateLo
         LoanProposalSourceData sourceData = LoanProposalSourceDataMapper.toSourceData(sourceDataContext);
         LoanProposalUpdateData updateData = dataMapper.toUpdateData(command, sourceData);
 
-        try {
-            loanProposal.update(updateData);
-        } catch (LoanProposalValidationException ex) {
-            CreateLoanProposalCommandHandler.publishFailedEvent(ex, messageProcessor);
-            throw ex;
-        }
+        loanProposal.update(updateData);
 
         persistenceService.persist(loanProposal);
-        messageProcessor.publish(loanProposal.getEvents());
+        messagePublisher.publishAll(loanProposal.getEvents());
         loanProposal.clearEvents();
     }
 }

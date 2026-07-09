@@ -4,7 +4,7 @@ import com.bits.ddd.annotation.PersistDomain;
 import com.bits.ddd.annotation.RegisterCommandHandler;
 import com.bits.ddd.handler.CommandHandler;
 import com.bits.ddd.service.DomainPersistenceService;
-import com.bits.ddd.service.MessageProcessor;
+import com.bits.ddd.shared.service.MessagePublisher;
 import com.bits.ddd.service.SourceDataContext;
 import com.bits.ddd.shared.exception.domain.DomainValidationException;
 import com.bits.ddd.shared.localization.LocalizedMessage;
@@ -16,7 +16,6 @@ import com.bits.loanproposal.application.service.LoanProposalSourceDataProvider;
 import com.bits.loanproposal.application.service.ProposalNumberSequenceService;
 import com.bits.loanproposal.domain.aggregate.LoanProposal;
 import com.bits.loanproposal.domain.aggregate.LoanProposalRepository;
-import com.bits.loanproposal.domain.event.LoanProposalFailedEvent;
 import com.bits.loanproposal.domain.exception.LoanProposalValidationException;
 import com.bits.loanproposal.domain.param.LoanProposalCreationData;
 import lombok.AllArgsConstructor;
@@ -24,7 +23,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
-import java.util.List;
 import java.util.Map;
 
 import static com.bits.loanproposal.domain.constant.DomainErrorConstant.ALREADY_EXISTS;
@@ -39,7 +37,7 @@ public class CreateLoanProposalCommandHandler implements CommandHandler<CreateLo
     @PersistDomain
     private final DomainPersistenceService<LoanProposal, String> persistenceService;
     private final LoanProposalSourceDataProvider sourceDataProvider;
-    private final MessageProcessor messageProcessor;
+    private final MessagePublisher messagePublisher;
     private final LoanProposalRepository loanProposalRepository;
     private final LoanProposalDataMapper loanProposalDataMapper;
     private final ProposalNumberSequenceService numberSequenceService;
@@ -57,35 +55,15 @@ public class CreateLoanProposalCommandHandler implements CommandHandler<CreateLo
         if (applicationDate == null) {
             Map<String, LocalizedMessage> errors = Map.of("applicationDate",
                     LocalizedMessage.builder().key("BUSINESS_DATE_NOT_AVAILABLE").build());
-
-            LoanProposalValidationException noBusinessDate = new LoanProposalValidationException(
-                    LoanProposalFailedEvent.validationError(command.getTracerId(), errors), errors);
-
-            publishFailedEvent(noBusinessDate, messageProcessor);
-            throw noBusinessDate;
+            throw new LoanProposalValidationException(errors);
         }
 
         long sequence = numberSequenceService.next(applicationDate);
         LoanProposalCreationData creationData = loanProposalDataMapper.toCreationData(command, sourceData, sequence);
 
-        LoanProposal loanProposal;
-        try {
-            loanProposal = LoanProposal.create(creationData, sourceData);
-        } catch (LoanProposalValidationException loanProposalValidationException) {
-            publishFailedEvent(loanProposalValidationException, messageProcessor);
-            throw loanProposalValidationException;
-        }
+        LoanProposal loanProposal = LoanProposal.create(creationData, sourceData);
 
         persistenceService.persist(loanProposal);
-        messageProcessor.publish(loanProposal.getEvents());
-    }
-
-    static void publishFailedEvent(LoanProposalValidationException loanProposalValidationException, MessageProcessor messageProcessor) {
-        try {
-            messageProcessor.publish(List.of(loanProposalValidationException.getFailedEvent()));
-        } catch (Exception publishFailure) {
-            log.error("Could not publish LoanProposalFailedEvent for trace {}: {}",
-                    loanProposalValidationException.getFailedEvent().getTracerId(), publishFailure.getMessage());
-        }
+        messagePublisher.publishAll(loanProposal.getEvents());
     }
 }

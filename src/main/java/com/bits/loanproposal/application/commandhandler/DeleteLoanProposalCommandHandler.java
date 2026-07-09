@@ -4,7 +4,7 @@ import com.bits.ddd.annotation.PersistDomain;
 import com.bits.ddd.annotation.RegisterCommandHandler;
 import com.bits.ddd.handler.CommandHandler;
 import com.bits.ddd.service.DomainPersistenceService;
-import com.bits.ddd.service.MessageProcessor;
+import com.bits.ddd.shared.service.MessagePublisher;
 import com.bits.loanproposal.application.command.DeleteLoanProposalCommand;
 import com.bits.loanproposal.application.mapper.LoanProposalDataMapper;
 import com.bits.loanproposal.application.service.LoanProposalQueryService;
@@ -22,7 +22,7 @@ public class DeleteLoanProposalCommandHandler implements CommandHandler<DeleteLo
 
     @PersistDomain
     private final DomainPersistenceService<LoanProposal, String> persistenceService;
-    private final MessageProcessor messageProcessor;
+    private final MessagePublisher messagePublisher;
     private final LoanProposalQueryService loanProposalQueryService;
     private final LoanProposalDataMapper loanProposalDataMapper;
 
@@ -32,14 +32,9 @@ public class DeleteLoanProposalCommandHandler implements CommandHandler<DeleteLo
         LoanProposal loanProposal = loanProposalQueryService.fetchByIdOrHandleFailure(deleteLoanProposalCommand.getId(), deleteLoanProposalCommand.getTracerId());
         LoanProposalDeletionData loanProposalDeletionData = loanProposalDataMapper.toDeletionData(deleteLoanProposalCommand);
 
-        try {
-            loanProposal.delete(loanProposalDeletionData);
-        } catch (LoanProposalValidationException ex) {
-            CreateLoanProposalCommandHandler.publishFailedEvent(ex, messageProcessor);
-            throw ex;
-        }
+        loanProposal.delete(loanProposalDeletionData);
 
         persistenceService.persist(loanProposal);
-        messageProcessor.publish(loanProposal.getEvents());
+        messagePublisher.publishAll(loanProposal.getEvents());
     }
 }

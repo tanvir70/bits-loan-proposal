@@ -24,14 +24,14 @@ public class LoanProposalCommandListener {
         this.commandMapper = commandMapper;
     }
 
-    @RabbitListener(queues = RabbitMQConstants.LOAN_PROPOSAL_UPDATE_COMMAND_QUEUE)
+    @RabbitListener(queues = RabbitMQConstants.LOAN_PROPOSAL_UPDATE_COMMAND_QUEUE, errorHandler = "messageExceptionHandler")
     public void onUpdateCommand(Message message) {
         UpdateLoanProposalMessageDto payload = JsonUtil.deserialize(message.getBody(), UpdateLoanProposalMessageDto.class);
         UpdateLoanProposalCommand command = commandMapper.toUpdateCommand(payload);
         commandBus.handle(command);
     }
 
-    @RabbitListener(queues = RabbitMQConstants.LOAN_PROPOSAL_DELETE_COMMAND_QUEUE)
+    @RabbitListener(queues = RabbitMQConstants.LOAN_PROPOSAL_DELETE_COMMAND_QUEUE, errorHandler = "messageExceptionHandler")
     public void onDeleteCommand(Message message) {
         DeleteLoanProposalMessageDto payload = JsonUtil.deserialize(message.getBody(), DeleteLoanProposalMessageDto.class);
         DeleteLoanProposalCommand command = commandMapper.toDeleteCommand(payload);

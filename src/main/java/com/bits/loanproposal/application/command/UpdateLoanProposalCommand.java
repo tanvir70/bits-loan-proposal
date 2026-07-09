@@ -1,6 +1,6 @@
 package com.bits.loanproposal.application.command;
 
-import com.bits.ddd.shared.messaging.CommandMessage;
+import com.bits.ddd.shared.messaging.Command;
 import com.bits.loanproposal.domain.enums.LoanProposalType;
 import com.bits.loanproposal.presentation.controller.dto.*;
 import lombok.Getter;
@@ -9,7 +9,7 @@ import java.math.BigDecimal;
 import java.util.List;
 
 @Getter
-public class UpdateLoanProposalCommand extends CommandMessage {
+public class UpdateLoanProposalCommand extends Command {
     private final String id;
     private final Long loanProductId;
     private final Long loanProductDetailsId;

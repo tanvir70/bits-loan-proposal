@@ -1,5 +1,6 @@
 package com.bits.loanproposal.infrastructure.config;
 
+import com.bits.ddd.shared.exception.handler.MessageExceptionHandler;
 import com.bits.loanproposal.infrastructure.messaging.RabbitMQConstants;
 import org.springframework.amqp.core.Binding;
 import org.springframework.amqp.core.BindingBuilder;
@@ -129,6 +130,11 @@ public class RabbitMQConfig {
             @Qualifier("errorQueue") Queue errorQueue,
             @Qualifier("dlqExchange") DirectExchange dlqExchange) {
         return bindDlq(errorQueue, dlqExchange, RabbitMQConstants.LOAN_PROPOSAL_DELETED_EVENT_DLQ);
+    }
+
+    @Bean("messageExceptionHandler")
+    public MessageExceptionHandler messageExceptionHandler() {
+        return new MessageExceptionHandler();
     }
 
     private Queue durableQueue(String queueName, String deadLetterRoutingKey) {

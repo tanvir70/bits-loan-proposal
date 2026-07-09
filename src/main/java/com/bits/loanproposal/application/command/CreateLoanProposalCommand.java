@@ -1,6 +1,6 @@
 package com.bits.loanproposal.application.command;
 
-import com.bits.ddd.shared.messaging.CommandMessage;
+import com.bits.ddd.shared.messaging.Command;
 import com.bits.loanproposal.domain.enums.LoanProposalType;
 import com.bits.loanproposal.presentation.controller.dto.*;
 import lombok.Getter;
@@ -10,7 +10,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 @Getter
-public class CreateLoanProposalCommand extends CommandMessage {
+public class CreateLoanProposalCommand extends Command {
     private final String id;
     private final Long memberId;
     private final Long projectId;
