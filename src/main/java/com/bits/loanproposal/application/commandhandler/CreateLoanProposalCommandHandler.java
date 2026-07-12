@@ -6,7 +6,6 @@ import com.bits.ddd.handler.CommandHandler;
 import com.bits.ddd.service.DomainPersistenceService;
 import com.bits.ddd.shared.service.MessagePublisher;
 import com.bits.ddd.service.SourceDataContext;
-import com.bits.ddd.shared.exception.domain.DomainValidationException;
 import com.bits.ddd.shared.localization.LocalizedMessage;
 import com.bits.loanproposal.application.command.CreateLoanProposalCommand;
 import com.bits.loanproposal.application.dto.LoanProposalSourceData;
@@ -45,7 +44,7 @@ public class CreateLoanProposalCommandHandler implements CommandHandler<CreateLo
     @Override
     public void handle(CreateLoanProposalCommand command) {
         if (loanProposalRepository.findById(command.getId()).isPresent()) {
-            throw new DomainValidationException(ALREADY_EXISTS, LOAN_PROPOSAL_ALREADY_EXISTS);
+            throw new LoanProposalValidationException(ALREADY_EXISTS, LOAN_PROPOSAL_ALREADY_EXISTS);
         }
 
         SourceDataContext context = sourceDataProvider.provide(command);

@@ -107,6 +107,7 @@ public class LoanProposalSourceDataProvider implements SourceDataProvider<Create
                     LocalizedMessage.builder().key("BANK_NOT_FOUND").build());
         }
 
-        return builder.fetch(SourceDataValidationException::new);
+        return builder.fetch((tracerId, errors) ->
+                new SourceDataValidationException(tracerId, "CreateLoanProposalCommand", errors));
     }
 }

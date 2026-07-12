@@ -1,7 +1,7 @@
 package com.bits.loanproposal.presentation.controller;
 
-import com.bits.ddd.controller.BaseApiController;
-import com.bits.ddd.dto.ApiResponse;
+import com.bits.ddd.shared.controller.BaseApiController;
+import com.bits.ddd.shared.dto.ApiResponse;
 import com.bits.ddd.infra.core.bus.CommandBus;
 import com.bits.loanproposal.application.command.CreateLoanProposalCommand;
 import com.bits.loanproposal.application.command.DeleteLoanProposalCommand;

@@ -125,7 +125,8 @@ public class UpdateLoanProposalSourceDataProvider {
                     LocalizedMessage.builder().key("BANK_NOT_FOUND").build());
         }
 
-        return builder.fetch(SourceDataValidationException::new);
+        return builder.fetch((tracerId, errors) ->
+                new SourceDataValidationException(tracerId, "UpdateLoanProposalCommand", errors));
     }
 
     private static Long effective(Long requested, Long current) {

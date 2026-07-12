@@ -2,7 +2,6 @@ package com.bits.loanproposal.domain.aggregate;
 
 import com.bits.ddd.aggregate.AggregateRoot;
 import com.bits.ddd.shared.domain.value.DomainStatus;
-import com.bits.ddd.shared.exception.domain.DomainValidationException;
 import com.bits.ddd.shared.localization.LocalizedMessage;
 import com.bits.loanproposal.application.dto.LoanProposalSourceData;
 import com.bits.loanproposal.domain.entity.*;
@@ -165,7 +164,7 @@ public class LoanProposal extends AggregateRoot<String> {
 
     public static LoanProposal create(LoanProposalCreationData creationData, LoanProposalSourceData sourceData) {
         if (creationData.id() == null) {
-            throw new DomainValidationException(ID_NULL, PROPOSAL_ID_MUST_NOT_BE_NULL);
+            throw new LoanProposalValidationException(ID_NULL, PROPOSAL_ID_MUST_NOT_BE_NULL);
         }
         LoanProposal proposal = new LoanProposal();
         proposal.id = creationData.id();
@@ -295,7 +294,7 @@ public class LoanProposal extends AggregateRoot<String> {
 
     public void update(LoanProposalUpdateData updateData) {
         if (this.loanProposalStatus != LoanProposalStatus.PENDING) {
-            throw new DomainValidationException(UPDATE_FAILED, LOAN_PROPOSAL_UPDATE_FAILED);
+            throw new LoanProposalValidationException(UPDATE_FAILED, LOAN_PROPOSAL_UPDATE_FAILED);
         }
 
         this.loanProductId = coalesce(updateData.loanProductId(), this.loanProductId);
