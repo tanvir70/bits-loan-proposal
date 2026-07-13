@@ -7,8 +7,7 @@ spring:
     username: guest
     password: guest
   mongodb:
-    uri: mongodb://localhost:27017/loan_proposal_command
+    uri: "mongodb://localhost:27017/loan_proposal_command?replicaSet=rs0&retryWrites=false"
 
 server:
   port: 8081
-

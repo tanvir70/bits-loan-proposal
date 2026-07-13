@@ -19,7 +19,6 @@ public class LoanProposalCreatedEvent extends DomainEventMessage {
     public static final String TOPIC_EXCHANGE = RabbitMQConstants.LOAN_PROPOSAL_EXCHANGE;
     public static final String ROUTING_KEY = RabbitMQConstants.LOAN_PROPOSAL_CREATED_EVENT_ROUTING_KEY;
 
-    private String id;
     private Long loanProposalId;
     private String proposalNumber;
     private Long branchId;
@@ -61,7 +60,6 @@ public class LoanProposalCreatedEvent extends DomainEventMessage {
             long version,
             String tracerId) {
         super(id, "LoanProposal", version, tracerId, TOPIC_EXCHANGE, ROUTING_KEY);
-        this.id = id;
         this.loanProposalId = loanProposalId;
         this.proposalNumber = proposalNumber;
         this.branchId = branchId;
