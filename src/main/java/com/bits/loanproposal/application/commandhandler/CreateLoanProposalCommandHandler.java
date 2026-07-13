@@ -1,12 +1,9 @@
 package com.bits.loanproposal.application.commandhandler;
 
-import com.bits.ddd.annotation.PersistDomain;
 import com.bits.ddd.annotation.RegisterCommandHandler;
 import com.bits.ddd.handler.CommandHandler;
-import com.bits.ddd.service.DomainPersistenceService;
-import com.bits.ddd.shared.service.MessagePublisher;
+import com.bits.ddd.service.AggregateService;
 import com.bits.ddd.service.SourceDataContext;
-import com.bits.ddd.shared.exception.domain.DomainValidationException;
 import com.bits.ddd.shared.localization.LocalizedMessage;
 import com.bits.loanproposal.application.command.CreateLoanProposalCommand;
 import com.bits.loanproposal.application.dto.LoanProposalSourceData;
@@ -15,10 +12,10 @@ import com.bits.loanproposal.application.mapper.LoanProposalSourceDataMapper;
 import com.bits.loanproposal.application.service.LoanProposalSourceDataProvider;
 import com.bits.loanproposal.application.service.ProposalNumberSequenceService;
 import com.bits.loanproposal.domain.aggregate.LoanProposal;
-import com.bits.loanproposal.domain.aggregate.LoanProposalRepository;
 import com.bits.loanproposal.domain.exception.LoanProposalValidationException;
 import com.bits.loanproposal.domain.param.LoanProposalCreationData;
-import lombok.AllArgsConstructor;
+import com.bits.loanproposal.domain.repository.LoanProposalRepository;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
@@ -31,13 +28,11 @@ import static com.bits.loanproposal.domain.constant.DomainErrorConstant.LOAN_PRO
 @Slf4j
 @Service
 @RegisterCommandHandler
-@AllArgsConstructor
+@RequiredArgsConstructor
 public class CreateLoanProposalCommandHandler implements CommandHandler<CreateLoanProposalCommand> {
 
-    @PersistDomain
-    private final DomainPersistenceService<LoanProposal, String> persistenceService;
+    private final AggregateService<LoanProposal, String> aggregateService;
     private final LoanProposalSourceDataProvider sourceDataProvider;
-    private final MessagePublisher messagePublisher;
     private final LoanProposalRepository loanProposalRepository;
     private final LoanProposalDataMapper loanProposalDataMapper;
     private final ProposalNumberSequenceService numberSequenceService;
@@ -45,7 +40,7 @@ public class CreateLoanProposalCommandHandler implements CommandHandler<CreateLo
     @Override
     public void handle(CreateLoanProposalCommand command) {
         if (loanProposalRepository.findById(command.getId()).isPresent()) {
-            throw new DomainValidationException(ALREADY_EXISTS, LOAN_PROPOSAL_ALREADY_EXISTS);
+            throw new LoanProposalValidationException(ALREADY_EXISTS, LOAN_PROPOSAL_ALREADY_EXISTS);
         }
 
         SourceDataContext context = sourceDataProvider.provide(command);
@@ -63,7 +58,6 @@ public class CreateLoanProposalCommandHandler implements CommandHandler<CreateLo
 
         LoanProposal loanProposal = LoanProposal.create(creationData, sourceData);
 
-        persistenceService.persist(loanProposal);
-        messagePublisher.publishAll(loanProposal.getEvents());
+        aggregateService.save(loanProposal);
     }
 }

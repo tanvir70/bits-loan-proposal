@@ -1,11 +1,15 @@
 package com.bits.loanproposal.domain.aggregate;
 
 import com.bits.ddd.aggregate.AggregateRoot;
+import com.bits.ddd.annotation.Aggregate;
 import com.bits.ddd.shared.domain.value.DomainStatus;
-import com.bits.ddd.shared.exception.domain.DomainValidationException;
 import com.bits.ddd.shared.localization.LocalizedMessage;
 import com.bits.loanproposal.application.dto.LoanProposalSourceData;
-import com.bits.loanproposal.domain.entity.*;
+import com.bits.loanproposal.domain.entity.CoBorrower;
+import com.bits.loanproposal.domain.entity.Guarantor;
+import com.bits.loanproposal.domain.entity.Guardian;
+import com.bits.loanproposal.domain.entity.Nominee;
+import com.bits.loanproposal.domain.entity.SecondInsurer;
 import com.bits.loanproposal.domain.enums.ApiDataSource;
 import com.bits.loanproposal.domain.enums.LoanProposalStatus;
 import com.bits.loanproposal.domain.enums.LoanProposalType;
@@ -15,7 +19,27 @@ import com.bits.loanproposal.domain.param.LoanProposalCreationData;
 import com.bits.loanproposal.domain.param.LoanProposalDeletionData;
 import com.bits.loanproposal.domain.param.LoanProposalUpdateData;
 import com.bits.loanproposal.domain.specification.context.LoanProposalValidationContext;
-import com.bits.loanproposal.domain.specification.rules.*;
+import com.bits.loanproposal.domain.specification.rules.AgeLimitSpecification;
+import com.bits.loanproposal.domain.specification.rules.BankModeOfPaymentSpecification;
+import com.bits.loanproposal.domain.specification.rules.BranchProjectVoConsistencySpecification;
+import com.bits.loanproposal.domain.specification.rules.CoBorrowerSpecification;
+import com.bits.loanproposal.domain.specification.rules.DigitalDisbursementSpecification;
+import com.bits.loanproposal.domain.specification.rules.FireInsuranceSpecification;
+import com.bits.loanproposal.domain.specification.rules.InstallmentConfigurationSpecification;
+import com.bits.loanproposal.domain.specification.rules.InsurancePolicyTypeSecondInsurerSpecification;
+import com.bits.loanproposal.domain.specification.rules.LoanAmountSpecification;
+import com.bits.loanproposal.domain.specification.rules.LoanExposureLimitSpecification;
+import com.bits.loanproposal.domain.specification.rules.LoanProductPolicySpecification;
+import com.bits.loanproposal.domain.specification.rules.MemberEligibilitySpecification;
+import com.bits.loanproposal.domain.specification.rules.MigrationCountrySpecification;
+import com.bits.loanproposal.domain.specification.rules.ModeOfPaymentRocketWalletSpecification;
+import com.bits.loanproposal.domain.specification.rules.MoneyPlantSpecification;
+import com.bits.loanproposal.domain.specification.rules.NomineeSpecification;
+import com.bits.loanproposal.domain.specification.rules.ParallelCoExistingLoanSpecification;
+import com.bits.loanproposal.domain.specification.rules.ProjectSpecificRulesSpecification;
+import com.bits.loanproposal.domain.specification.rules.RepaymentFrequencyModeOfPaymentSpecification;
+import com.bits.loanproposal.domain.specification.rules.SchemeSectorMappingSpecification;
+import com.bits.loanproposal.domain.specification.rules.SpecialSavingsLienSpecification;
 import com.bits.loanproposal.domain.value.AutoDebitCollection;
 import com.bits.loanproposal.domain.value.FireInsuranceDetails;
 import com.bits.loanproposal.domain.value.OtcModeOfPayment;
@@ -34,11 +58,16 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 
-import static com.bits.loanproposal.domain.constant.DomainErrorConstant.*;
+import static com.bits.loanproposal.domain.constant.DomainErrorConstant.DELETE_FAILED;
+import static com.bits.loanproposal.domain.constant.DomainErrorConstant.ID_NULL;
+import static com.bits.loanproposal.domain.constant.DomainErrorConstant.LOAN_PROPOSAL_UPDATE_FAILED;
+import static com.bits.loanproposal.domain.constant.DomainErrorConstant.PROPOSAL_ID_MUST_NOT_BE_NULL;
+import static com.bits.loanproposal.domain.constant.DomainErrorConstant.UPDATE_FAILED;
 
 @Getter
 @Setter
 @NoArgsConstructor
+@Aggregate
 @Document(collection = "loan_proposal")
 public class LoanProposal extends AggregateRoot<String> {
 
@@ -165,7 +194,7 @@ public class LoanProposal extends AggregateRoot<String> {
 
     public static LoanProposal create(LoanProposalCreationData creationData, LoanProposalSourceData sourceData) {
         if (creationData.id() == null) {
-            throw new DomainValidationException(ID_NULL, PROPOSAL_ID_MUST_NOT_BE_NULL);
+            throw new LoanProposalValidationException(ID_NULL, PROPOSAL_ID_MUST_NOT_BE_NULL);
         }
         LoanProposal proposal = new LoanProposal();
         proposal.id = creationData.id();
@@ -295,7 +324,7 @@ public class LoanProposal extends AggregateRoot<String> {
 
     public void update(LoanProposalUpdateData updateData) {
         if (this.loanProposalStatus != LoanProposalStatus.PENDING) {
-            throw new DomainValidationException(UPDATE_FAILED, LOAN_PROPOSAL_UPDATE_FAILED);
+            throw new LoanProposalValidationException(UPDATE_FAILED, LOAN_PROPOSAL_UPDATE_FAILED);
         }
 
         this.loanProductId = coalesce(updateData.loanProductId(), this.loanProductId);

@@ -18,9 +18,11 @@ import com.bits.loanproposal.infrastructure.persistence.repository.repository.Pr
 import com.bits.loanproposal.infrastructure.persistence.repository.repository.ProjectPolicyDocumentRepository;
 import com.bits.loanproposal.infrastructure.persistence.repository.repository.SchemeDocumentRepository;
 import com.bits.loanproposal.infrastructure.persistence.repository.repository.VillageOrganisationDocumentRepository;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 @Component
+@RequiredArgsConstructor
 public class UpdateLoanProposalSourceDataProvider {
 
     private final SourceDataCoordinator coordinator;
@@ -36,35 +38,6 @@ public class UpdateLoanProposalSourceDataProvider {
     private final InsuranceProductDocumentRepository insuranceProductRepository;
     private final CountryDocumentRepository countryRepository;
     private final BankDocumentRepository bankRepository;
-
-    public UpdateLoanProposalSourceDataProvider(
-            SourceDataCoordinator coordinator,
-            MemberDocumentRepository memberRepository,
-            LoanProductDocumentRepository loanProductRepository,
-            LoanProductDetailsDocumentRepository loanProductDetailsRepository,
-            LoanProductPolicyDocumentRepository loanProductPolicyRepository,
-            SchemeDocumentRepository schemeRepository,
-            ProjectDocumentRepository projectRepository,
-            ProjectPolicyDocumentRepository projectPolicyRepository,
-            BranchDocumentRepository branchRepository,
-            VillageOrganisationDocumentRepository villageOrganisationRepository,
-            InsuranceProductDocumentRepository insuranceProductRepository,
-            CountryDocumentRepository countryRepository,
-            BankDocumentRepository bankRepository) {
-        this.coordinator = coordinator;
-        this.memberRepository = memberRepository;
-        this.loanProductRepository = loanProductRepository;
-        this.loanProductDetailsRepository = loanProductDetailsRepository;
-        this.loanProductPolicyRepository = loanProductPolicyRepository;
-        this.schemeRepository = schemeRepository;
-        this.projectRepository = projectRepository;
-        this.projectPolicyRepository = projectPolicyRepository;
-        this.branchRepository = branchRepository;
-        this.villageOrganisationRepository = villageOrganisationRepository;
-        this.insuranceProductRepository = insuranceProductRepository;
-        this.countryRepository = countryRepository;
-        this.bankRepository = bankRepository;
-    }
 
     public SourceDataContext provide(UpdateLoanProposalCommand command, LoanProposal existingAggregate) {
         SourceDataCoordinator.SourceDataFetchBuilder builder = coordinator.builder(command.getTracerId());
@@ -125,7 +98,9 @@ public class UpdateLoanProposalSourceDataProvider {
                     LocalizedMessage.builder().key("BANK_NOT_FOUND").build());
         }
 
-        return builder.fetch(SourceDataValidationException::new);
+        return builder.fetch((traceId, errors) ->
+                new SourceDataValidationException(command.getId(),
+                        command.getClass().getSimpleName(), errors));
     }
 
     private static Long effective(Long requested, Long current) {

@@ -6,7 +6,7 @@ plugins {
 
 group = 'com.bits.loanproposal'
 version = '0.0.1-SNAPSHOT'
-description = 'Loan Proposal command-side service scaffold using bits-ddd 1.2.2'
+description = 'Loan Proposal command-side service scaffold using bits-ddd 1.2.5'
 
 java {
     toolchain {
@@ -16,15 +16,12 @@ java {
 
 dependencyManagement {
     imports {
-        mavenBom 'com.bits.ddd:bits-ddd-bom:1.2.2'
+        mavenBom 'com.bits.ddd:bits-ddd-bom:1.2.5'
     }
 }
 
 dependencies {
     implementation 'com.bits.ddd:command-core'
-    implementation 'com.bits.ddd:shared'
-    implementation 'com.bits.ddd:application'
-    implementation 'com.bits.ddd:infra'
     implementation 'com.bits.ddd:annotation'
     annotationProcessor 'com.bits.ddd:annotation-processor'
     annotationProcessor 'com.bits.ddd:annotation'

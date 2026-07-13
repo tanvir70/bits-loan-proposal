@@ -6,10 +6,23 @@ import com.bits.ddd.service.SourceDataProvider;
 import com.bits.ddd.shared.exception.domain.SourceDataValidationException;
 import com.bits.ddd.shared.localization.LocalizedMessage;
 import com.bits.loanproposal.application.command.CreateLoanProposalCommand;
-import com.bits.loanproposal.infrastructure.persistence.repository.repository.*;
+import com.bits.loanproposal.infrastructure.persistence.repository.repository.BankDocumentRepository;
+import com.bits.loanproposal.infrastructure.persistence.repository.repository.BranchDocumentRepository;
+import com.bits.loanproposal.infrastructure.persistence.repository.repository.CountryDocumentRepository;
+import com.bits.loanproposal.infrastructure.persistence.repository.repository.InsuranceProductDocumentRepository;
+import com.bits.loanproposal.infrastructure.persistence.repository.repository.LoanProductDetailsDocumentRepository;
+import com.bits.loanproposal.infrastructure.persistence.repository.repository.LoanProductDocumentRepository;
+import com.bits.loanproposal.infrastructure.persistence.repository.repository.LoanProductPolicyDocumentRepository;
+import com.bits.loanproposal.infrastructure.persistence.repository.repository.MemberDocumentRepository;
+import com.bits.loanproposal.infrastructure.persistence.repository.repository.ProjectDocumentRepository;
+import com.bits.loanproposal.infrastructure.persistence.repository.repository.ProjectPolicyDocumentRepository;
+import com.bits.loanproposal.infrastructure.persistence.repository.repository.SchemeDocumentRepository;
+import com.bits.loanproposal.infrastructure.persistence.repository.repository.VillageOrganisationDocumentRepository;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 @Component
+@RequiredArgsConstructor
 public class LoanProposalSourceDataProvider implements SourceDataProvider<CreateLoanProposalCommand> {
 
     private final SourceDataCoordinator coordinator;
@@ -27,35 +40,6 @@ public class LoanProposalSourceDataProvider implements SourceDataProvider<Create
     private final InsuranceProductDocumentRepository insuranceProductRepository;
     private final CountryDocumentRepository countryRepository;
     private final BankDocumentRepository bankRepository;
-
-    public LoanProposalSourceDataProvider(
-            SourceDataCoordinator coordinator,
-            MemberDocumentRepository memberRepository,
-            LoanProductDocumentRepository loanProductRepository,
-            LoanProductDetailsDocumentRepository loanProductDetailsRepository,
-            LoanProductPolicyDocumentRepository loanProductPolicyRepository,
-            SchemeDocumentRepository schemeRepository,
-            ProjectDocumentRepository projectRepository,
-            ProjectPolicyDocumentRepository projectPolicyRepository,
-            BranchDocumentRepository branchRepository,
-            VillageOrganisationDocumentRepository villageOrganisationRepository,
-            InsuranceProductDocumentRepository insuranceProductRepository,
-            CountryDocumentRepository countryRepository,
-            BankDocumentRepository bankRepository) {
-        this.coordinator = coordinator;
-        this.memberRepository = memberRepository;
-        this.loanProductRepository = loanProductRepository;
-        this.loanProductDetailsRepository = loanProductDetailsRepository;
-        this.loanProductPolicyRepository = loanProductPolicyRepository;
-        this.schemeRepository = schemeRepository;
-        this.projectRepository = projectRepository;
-        this.projectPolicyRepository = projectPolicyRepository;
-        this.branchRepository = branchRepository;
-        this.villageOrganisationRepository = villageOrganisationRepository;
-        this.insuranceProductRepository = insuranceProductRepository;
-        this.countryRepository = countryRepository;
-        this.bankRepository = bankRepository;
-    }
 
     @Override
     public SourceDataContext provide(CreateLoanProposalCommand command) {
@@ -107,6 +91,8 @@ public class LoanProposalSourceDataProvider implements SourceDataProvider<Create
                     LocalizedMessage.builder().key("BANK_NOT_FOUND").build());
         }
 
-        return builder.fetch(SourceDataValidationException::new);
+        return builder.fetch((traceId, errors) ->
+                new SourceDataValidationException(command.getId(),
+                        command.getClass().getSimpleName(), errors));
     }
 }

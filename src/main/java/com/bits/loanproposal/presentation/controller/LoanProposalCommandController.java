@@ -1,13 +1,14 @@
 package com.bits.loanproposal.presentation.controller;
 
-import com.bits.ddd.controller.BaseApiController;
-import com.bits.ddd.dto.ApiResponse;
 import com.bits.ddd.infra.core.bus.CommandBus;
+import com.bits.ddd.shared.controller.BaseApiController;
+import com.bits.ddd.shared.dto.ApiResponse;
 import com.bits.loanproposal.application.command.CreateLoanProposalCommand;
 import com.bits.loanproposal.application.command.DeleteLoanProposalCommand;
 import com.bits.loanproposal.application.mapper.LoanProposalCommandMapper;
 import com.bits.loanproposal.presentation.controller.dto.CreateLoanProposalRequestDto;
 import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -22,19 +23,15 @@ import java.util.UUID;
 
 import static com.bits.loanproposal.presentation.constant.CommandResponseConstant.ACCEPTED;
 import static com.bits.loanproposal.presentation.constant.RouteConstant.LOAN_PROPOSALS;
+import static com.bits.loanproposal.presentation.constant.RouteConstant.LOAN_PROPOSALS_DELETE;
 
 @RestController
 @RequestMapping(LOAN_PROPOSALS)
+@RequiredArgsConstructor
 public class LoanProposalCommandController extends BaseApiController {
 
     private final CommandBus commandBus;
     private final LoanProposalCommandMapper commandMapper;
-
-    public LoanProposalCommandController(CommandBus commandBus,
-                                         LoanProposalCommandMapper commandMapper) {
-        this.commandBus = commandBus;
-        this.commandMapper = commandMapper;
-    }
 
     @PostMapping
     public ResponseEntity<ApiResponse<Void>> createLoanProposal(
@@ -52,7 +49,7 @@ public class LoanProposalCommandController extends BaseApiController {
         return respond(HttpStatus.ACCEPTED, ACCEPTED, tracerId);
     }
 
-    @DeleteMapping("/{branchId}/{id}")
+    @DeleteMapping(LOAN_PROPOSALS_DELETE)
     public ResponseEntity<ApiResponse<Void>> deleteLoanProposal(
             @RequestAttribute(name = "trace_id", required = false) String tracerId,
             @RequestAttribute(name = "user_id", required = false) String deletedBy,

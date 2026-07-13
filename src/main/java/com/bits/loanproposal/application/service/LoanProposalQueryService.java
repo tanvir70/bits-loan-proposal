@@ -1,8 +1,8 @@
 package com.bits.loanproposal.application.service;
 
-import com.bits.ddd.shared.exception.domain.DomainValidationException;
 import com.bits.loanproposal.domain.aggregate.LoanProposal;
-import com.bits.loanproposal.domain.aggregate.LoanProposalRepository;
+import com.bits.loanproposal.domain.exception.LoanProposalValidationException;
+import com.bits.loanproposal.domain.repository.LoanProposalRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -16,6 +16,6 @@ public class LoanProposalQueryService {
     private final LoanProposalRepository repository;
 
     public LoanProposal fetchByIdOrHandleFailure(String id, String traceId) {
-        return repository.findById(id).orElseThrow(() -> new DomainValidationException(NOT_FOUND, LOAN_PROPOSAL_NOT_FOUND));
+        return repository.findById(id).orElseThrow(() -> new LoanProposalValidationException(NOT_FOUND, LOAN_PROPOSAL_NOT_FOUND));
     }
 }
