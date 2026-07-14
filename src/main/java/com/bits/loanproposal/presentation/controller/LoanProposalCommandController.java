@@ -1,5 +1,6 @@
 package com.bits.loanproposal.presentation.controller;
 
+import static com.bits.loanproposal.presentation.constant.CommandResponseConstant.ACCEPTED;
 import static com.bits.loanproposal.presentation.constant.RouteConstant.LOAN_PROPOSALS;
 import static com.bits.loanproposal.presentation.constant.RouteConstant.LOAN_PROPOSALS_DELETE;
 
@@ -44,7 +45,7 @@ public class LoanProposalCommandController {
     commandBus.handle(command);
 
     return ResponseEntity.ok(
-        ApiResponse.success(null, HttpStatus.CREATED.toString(), HttpStatus.CREATED.value(),
+        ApiResponse.success(null, ACCEPTED, HttpStatus.CREATED.value(),
             tracerId));
   }
 
@@ -66,7 +67,7 @@ public class LoanProposalCommandController {
     commandBus.handle(deleteLoanProposalCommand);
 
     return ResponseEntity.ok(
-        ApiResponse.success(null, HttpStatus.ACCEPTED.toString(), HttpStatus.ACCEPTED.value(),
+        ApiResponse.success(null, ACCEPTED, HttpStatus.ACCEPTED.value(),
             tracerId));
   }
 }
