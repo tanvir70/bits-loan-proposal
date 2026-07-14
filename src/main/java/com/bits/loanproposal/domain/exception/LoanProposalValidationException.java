@@ -2,10 +2,8 @@ package com.bits.loanproposal.domain.exception;
 
 import com.bits.ddd.shared.exception.domain.BusinessRuleViolationException;
 import com.bits.ddd.shared.localization.LocalizedMessage;
-import lombok.Getter;
-
 import java.util.Map;
-import java.util.stream.Collectors;
+import lombok.Getter;
 
 @Getter
 public class LoanProposalValidationException extends BusinessRuleViolationException {
@@ -21,11 +19,5 @@ public class LoanProposalValidationException extends BusinessRuleViolationExcept
 
     public LoanProposalValidationException(String field, String messageKey) {
         this(Map.of(field, LocalizedMessage.builder().key(messageKey).build()));
-    }
-
-    private static String summarize(Map<String, LocalizedMessage> errors) {
-        return errors.entrySet().stream()
-                .map(e -> e.getKey() + ": " + e.getValue().getKey())
-                .collect(Collectors.joining("; "));
     }
 }

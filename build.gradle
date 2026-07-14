@@ -16,7 +16,7 @@ java {
 
 dependencyManagement {
     imports {
-        mavenBom 'com.bits.ddd:bits-ddd-bom:1.2.5'
+        mavenBom 'com.bits.ddd:bits-ddd-bom:1.2.6'
     }
 }
 
