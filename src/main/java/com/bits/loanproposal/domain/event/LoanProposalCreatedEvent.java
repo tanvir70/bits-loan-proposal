@@ -1,5 +1,7 @@
 package com.bits.loanproposal.domain.event;
 
+import static com.bits.loanproposal.presentation.constant.CommandResponseConstant.LOAN_PROPOSAL;
+
 import com.bits.ddd.shared.domain.value.DomainStatus;
 import com.bits.ddd.shared.messaging.DomainEventMessage;
 import com.bits.loanproposal.domain.enums.*;
@@ -59,7 +61,7 @@ public class LoanProposalCreatedEvent extends DomainEventMessage {
             LocalDate applicationDate,
             long version,
             String tracerId) {
-        super(id, "LoanProposal", version, tracerId, TOPIC_EXCHANGE, ROUTING_KEY);
+        super(id,LOAN_PROPOSAL, version, tracerId, TOPIC_EXCHANGE, ROUTING_KEY);
         this.loanProposalId = loanProposalId;
         this.proposalNumber = proposalNumber;
         this.branchId = branchId;

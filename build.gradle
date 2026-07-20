@@ -6,7 +6,7 @@ plugins {
 
 group = 'com.bits.loanproposal'
 version = '0.0.1-SNAPSHOT'
-description = 'Loan Proposal command-side service scaffold using bits-ddd 1.2.5'
+description = 'Loan Proposal command-side service scaffold using bits-ddd 1.2.7'
 
 java {
     toolchain {
@@ -16,7 +16,7 @@ java {
 
 dependencyManagement {
     imports {
-        mavenBom 'com.bits.ddd:bits-ddd-bom:1.2.6'
+        mavenBom 'com.bits.ddd:bits-ddd-bom:1.2.7'
     }
 }
 
@@ -46,7 +46,6 @@ dependencies {
 tasks.named('test') {
     useJUnitPlatform()
 }
-
 tasks.named('bootRun') {
     systemProperty 'otel.sdk.disabled', 'true'
 }

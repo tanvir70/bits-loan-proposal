@@ -1,16 +1,16 @@
 package com.bits.loanproposal.domain.enums;
 
-
 import com.bits.ddd.shared.persistence.converter.BitsEnum;
 
-public enum LoanProposalStatus implements BitsEnum<Integer> {
-    PENDING(1),
-    APPROVED(2),
-    REJECTED(3);
+/** A value-backed enum persisted by its numeric value. */
+public enum LoanProposalTestPriority implements BitsEnum<Integer> {
+    STANDARD(10),
+    PRIORITY(20),
+    URGENT(30);
 
     private final Integer value;
 
-    LoanProposalStatus(Integer value) {
+    LoanProposalTestPriority(Integer value) {
         this.value = value;
     }
 

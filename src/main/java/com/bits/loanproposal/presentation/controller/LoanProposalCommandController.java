@@ -1,14 +1,18 @@
 package com.bits.loanproposal.presentation.controller;
 
 import static com.bits.loanproposal.presentation.constant.CommandResponseConstant.ACCEPTED;
+import static com.bits.loanproposal.presentation.constant.CommandResponseConstant.SUCCESS;
 import static com.bits.loanproposal.presentation.constant.RouteConstant.LOAN_PROPOSALS;
 import static com.bits.loanproposal.presentation.constant.RouteConstant.LOAN_PROPOSALS_DELETE;
+import static com.bits.loanproposal.presentation.constant.RouteConstant.LOAN_PROPOSALS_GET;
 
 import com.bits.ddd.infra.core.bus.CommandBus;
 import com.bits.ddd.shared.dto.ApiResponse;
 import com.bits.loanproposal.application.command.CreateLoanProposalCommand;
 import com.bits.loanproposal.application.command.DeleteLoanProposalCommand;
 import com.bits.loanproposal.application.mapper.LoanProposalCommandMapper;
+import com.bits.loanproposal.application.service.LoanProposalQueryService;
+import com.bits.loanproposal.domain.aggregate.LoanProposal;
 import com.bits.loanproposal.presentation.controller.dto.CreateLoanProposalRequestDto;
 import jakarta.validation.Valid;
 import java.util.UUID;
@@ -16,6 +20,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestAttribute;
@@ -30,6 +35,22 @@ public class LoanProposalCommandController {
 
   private final CommandBus commandBus;
   private final LoanProposalCommandMapper commandMapper;
+  private final LoanProposalQueryService queryService;
+
+  @GetMapping(LOAN_PROPOSALS_GET)
+  public ResponseEntity<ApiResponse<LoanProposal>> getLoanProposal(
+      @RequestAttribute(name = "trace_id", required = false) String tracerId,
+      @PathVariable String id) {
+
+    if (tracerId == null) {
+      tracerId = UUID.randomUUID().toString();
+    }
+
+    LoanProposal loanProposal = queryService.fetchByIdOrHandleFailure(id, tracerId);
+
+    return ResponseEntity.ok(
+        ApiResponse.success(loanProposal, SUCCESS, HttpStatus.OK.value(), tracerId));
+  }
 
   @PostMapping
   public ResponseEntity<ApiResponse<Void>> createLoanProposal(
