@@ -62,6 +62,7 @@ import static com.bits.loanproposal.domain.constant.DomainErrorConstant.DELETE_F
 import static com.bits.loanproposal.domain.constant.DomainErrorConstant.ID_NULL;
 import static com.bits.loanproposal.domain.constant.DomainErrorConstant.LOAN_PROPOSAL_UPDATE_FAILED;
 import static com.bits.loanproposal.domain.constant.DomainErrorConstant.PROPOSAL_ID_MUST_NOT_BE_NULL;
+import static com.bits.loanproposal.domain.constant.DomainErrorConstant.APPROVE_FAILED;
 import static com.bits.loanproposal.domain.constant.DomainErrorConstant.UPDATE_FAILED;
 
 @Getter
@@ -402,6 +403,41 @@ public class LoanProposal extends AggregateRoot<String> {
         this.status = DomainStatus.INACTIVE;
 
         addEvent(LoanProposalEventMapper.INSTANCE.toDeletedEvent(this));
+    }
+
+    public void approve(String traceId, String approvedBy) {
+        if (!isEligibleForApproval()) {
+            Map<String, LocalizedMessage> errors = Map.of("loanProposal",
+                    LocalizedMessage.builder()
+                            .key(APPROVE_FAILED)
+                            .args(new Object[]{this.approvalIneligibilityReason()})
+                            .build());
+            throw new LoanProposalValidationException(errors);
+        }
+
+        this.tracerId = traceId;
+        this.loanProposalStatus = LoanProposalStatus.APPROVED;
+        this.approvalStatus = LoanProposalStatus.APPROVED.name();
+        this.approvalFlowStatus = LoanProposalStatus.APPROVED.name();
+        this.status = DomainStatus.UPDATED;
+
+        addEvent(LoanProposalEventMapper.INSTANCE.toApprovedEvent(this, approvedBy));
+    }
+
+    public boolean isEligibleForApproval() {
+        return this.loanProposalStatus == LoanProposalStatus.PENDING
+                && !Boolean.TRUE.equals(this.deleted)
+                && this.status != DomainStatus.INACTIVE;
+    }
+
+    public String approvalIneligibilityReason() {
+        if (Boolean.TRUE.equals(this.deleted) || this.status == DomainStatus.INACTIVE) {
+            return "Loan proposal is deleted or inactive";
+        }
+        if (this.loanProposalStatus != LoanProposalStatus.PENDING) {
+            return "Only pending loan proposal can be approved. Loan proposal status: " + this.loanProposalStatus;
+        }
+        return null;
     }
 
     private static <T> T coalesce(T incoming, T current) {

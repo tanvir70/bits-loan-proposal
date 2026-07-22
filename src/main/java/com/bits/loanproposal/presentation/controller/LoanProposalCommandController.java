@@ -1,73 +1,91 @@
 package com.bits.loanproposal.presentation.controller;
 
-import static com.bits.loanproposal.presentation.constant.CommandResponseConstant.ACCEPTED;
-import static com.bits.loanproposal.presentation.constant.RouteConstant.LOAN_PROPOSALS;
-import static com.bits.loanproposal.presentation.constant.RouteConstant.LOAN_PROPOSALS_DELETE;
-
 import com.bits.ddd.infra.core.bus.CommandBus;
 import com.bits.ddd.shared.dto.ApiResponse;
+import com.bits.loanproposal.application.command.BulkApproveLoanProposalsCommand;
 import com.bits.loanproposal.application.command.CreateLoanProposalCommand;
 import com.bits.loanproposal.application.command.DeleteLoanProposalCommand;
 import com.bits.loanproposal.application.mapper.LoanProposalCommandMapper;
+import com.bits.loanproposal.presentation.controller.dto.BulkApproveLoanProposalRequestDto;
 import com.bits.loanproposal.presentation.controller.dto.CreateLoanProposalRequestDto;
 import jakarta.validation.Valid;
-import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestAttribute;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.UUID;
+
+import static com.bits.loanproposal.presentation.constant.CommandResponseConstant.ACCEPTED;
+import static com.bits.loanproposal.presentation.constant.RouteConstant.*;
 
 @RestController
 @RequestMapping(LOAN_PROPOSALS)
 @RequiredArgsConstructor
 public class LoanProposalCommandController {
 
-  private final CommandBus commandBus;
-  private final LoanProposalCommandMapper commandMapper;
+    private final CommandBus commandBus;
+    private final LoanProposalCommandMapper commandMapper;
 
-  @PostMapping
-  public ResponseEntity<ApiResponse<Void>> createLoanProposal(
-      @RequestAttribute(name = "trace_id", required = false) String tracerId,
-      @Valid @RequestBody CreateLoanProposalRequestDto createLoanProposalRequestDto) {
+    @PostMapping
+    public ResponseEntity<ApiResponse<Void>> createLoanProposal(
+            @RequestAttribute(name = "trace_id", required = false) String tracerId,
+            @Valid @RequestBody CreateLoanProposalRequestDto createLoanProposalRequestDto) {
 
-    if (tracerId == null) {
-      tracerId = UUID.randomUUID().toString();
+        if (tracerId == null) {
+            tracerId = UUID.randomUUID().toString();
+        }
+
+        CreateLoanProposalCommand command = commandMapper.toCreateCommand(tracerId,
+                createLoanProposalRequestDto);
+        commandBus.handle(command);
+
+        return successResponse(HttpStatus.CREATED, tracerId);
     }
 
-    CreateLoanProposalCommand command = commandMapper.toCreateCommand(tracerId,
-        createLoanProposalRequestDto);
-    commandBus.handle(command);
+    @DeleteMapping(LOAN_PROPOSALS_DELETE)
+    public ResponseEntity<ApiResponse<Void>> deleteLoanProposal(
+            @RequestAttribute(name = "trace_id", required = false) String tracerId,
+            @RequestAttribute(name = "user_id", required = false) String deletedBy,
+            @PathVariable Long branchId, @PathVariable String id) {
 
-    return ResponseEntity.ok(
-        ApiResponse.success(null, ACCEPTED, HttpStatus.CREATED.value(),
-            tracerId));
-  }
+        if (tracerId == null) {
+            tracerId = UUID.randomUUID().toString();
+        }
+        if (deletedBy == null || deletedBy.isBlank()) {
+            deletedBy = "system";
+        }
 
-  @DeleteMapping(LOAN_PROPOSALS_DELETE)
-  public ResponseEntity<ApiResponse<Void>> deleteLoanProposal(
-      @RequestAttribute(name = "trace_id", required = false) String tracerId,
-      @RequestAttribute(name = "user_id", required = false) String deletedBy,
-      @PathVariable Long branchId, @PathVariable String id) {
+        DeleteLoanProposalCommand deleteLoanProposalCommand = commandMapper.toDeleteCommand(tracerId,
+                id, branchId, deletedBy);
+        commandBus.handle(deleteLoanProposalCommand);
 
-    if (tracerId == null) {
-      tracerId = UUID.randomUUID().toString();
-    }
-    if (deletedBy == null || deletedBy.isBlank()) {
-      deletedBy = "system";
+        return successResponse(HttpStatus.ACCEPTED, tracerId);
     }
 
-    DeleteLoanProposalCommand deleteLoanProposalCommand = commandMapper.toDeleteCommand(tracerId,
-        id, branchId, deletedBy);
-    commandBus.handle(deleteLoanProposalCommand);
+    @PostMapping(LOAN_PROPOSALS_BULK_APPROVAL)
+    public ResponseEntity<ApiResponse<Void>> bulkApproveLoanProposals(
+            @RequestAttribute(name = "trace_id", required = false) String tracerId,
+            @RequestAttribute(name = "user_id", required = false) String approvedBy,
+            @RequestHeader(name = "user_id", required = false) String approvedByHeader,
+            @Valid @RequestBody BulkApproveLoanProposalRequestDto request) {
 
-    return ResponseEntity.ok(
-        ApiResponse.success(null, ACCEPTED, HttpStatus.ACCEPTED.value(),
-            tracerId));
-  }
+        if (tracerId == null) {
+            tracerId = UUID.randomUUID().toString();
+        }
+
+        BulkApproveLoanProposalsCommand command = commandMapper.toBulkApproveCommand(
+                tracerId, request, resolveUserId(approvedBy, approvedByHeader));
+        commandBus.handle(command);
+
+        return successResponse(HttpStatus.ACCEPTED, tracerId);
+    }
+
+    private <T> ResponseEntity<ApiResponse<T>> successResponse(HttpStatus status, String tracerId) {
+        return ResponseEntity.ok(ApiResponse.success(null, ACCEPTED, status.value(), tracerId));
+    }
+
+    private String resolveUserId(String userIdAttribute, String userIdHeader) {
+        return userIdAttribute != null && !userIdAttribute.isBlank() ? userIdAttribute : userIdHeader;
+    }
 }

@@ -1,12 +1,7 @@
 package com.bits.loanproposal.infrastructure.config;
 
 import com.bits.loanproposal.infrastructure.messaging.RabbitMQConstants;
-import org.springframework.amqp.core.Binding;
-import org.springframework.amqp.core.BindingBuilder;
-import org.springframework.amqp.core.DirectExchange;
-import org.springframework.amqp.core.Queue;
-import org.springframework.amqp.core.QueueBuilder;
-import org.springframework.amqp.core.TopicExchange;
+import org.springframework.amqp.core.*;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -57,6 +52,13 @@ public class RabbitMQConfig {
     }
 
     @Bean
+    public Queue loanProposalApprovedEventQueue() {
+        return durableQueue(
+                RabbitMQConstants.LOAN_PROPOSAL_APPROVED_EVENT_QUEUE,
+                RabbitMQConstants.LOAN_PROPOSAL_APPROVED_EVENT_DLQ);
+    }
+
+    @Bean
     public Binding loanProposalUpdateCommandBinding(
             @Qualifier("loanProposalExchange") TopicExchange loanProposalExchange) {
         return BindingBuilder.bind(loanProposalUpdateCommandQueue())
@@ -97,6 +99,14 @@ public class RabbitMQConfig {
     }
 
     @Bean
+    public Binding loanProposalApprovedEventBinding(
+            @Qualifier("loanProposalExchange") TopicExchange loanProposalExchange) {
+        return BindingBuilder.bind(loanProposalApprovedEventQueue())
+                .to(loanProposalExchange)
+                .with(RabbitMQConstants.LOAN_PROPOSAL_APPROVED_EVENT_ROUTING_KEY);
+    }
+
+    @Bean
     public Binding loanProposalUpdateCommandDlqBinding(
             @Qualifier("errorQueue") Queue errorQueue,
             @Qualifier("dlqExchange") DirectExchange dlqExchange) {
@@ -129,6 +139,13 @@ public class RabbitMQConfig {
             @Qualifier("errorQueue") Queue errorQueue,
             @Qualifier("dlqExchange") DirectExchange dlqExchange) {
         return bindDlq(errorQueue, dlqExchange, RabbitMQConstants.LOAN_PROPOSAL_DELETED_EVENT_DLQ);
+    }
+
+    @Bean
+    public Binding loanProposalApprovedEventDlqBinding(
+            @Qualifier("errorQueue") Queue errorQueue,
+            @Qualifier("dlqExchange") DirectExchange dlqExchange) {
+        return bindDlq(errorQueue, dlqExchange, RabbitMQConstants.LOAN_PROPOSAL_APPROVED_EVENT_DLQ);
     }
 
     private Queue durableQueue(String queueName, String deadLetterRoutingKey) {

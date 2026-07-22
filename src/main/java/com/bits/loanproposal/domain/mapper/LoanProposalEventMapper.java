@@ -1,6 +1,7 @@
 package com.bits.loanproposal.domain.mapper;
 
 import com.bits.loanproposal.domain.aggregate.LoanProposal;
+import com.bits.loanproposal.domain.event.LoanProposalApprovedEvent;
 import com.bits.loanproposal.domain.event.LoanProposalCreatedEvent;
 import com.bits.loanproposal.domain.event.LoanProposalDeletedEvent;
 import com.bits.loanproposal.domain.event.LoanProposalUpdatedEvent;
@@ -93,6 +94,26 @@ public interface LoanProposalEventMapper {
                 loanProposal.getStatus(),
                 loanProposal.getDeletedBy(),
                 loanProposal.getDeletedAt(),
+                version,
+                loanProposal.getTracerId()
+        );
+    }
+
+    default LoanProposalApprovedEvent toApprovedEvent(LoanProposal loanProposal, String approvedBy) {
+        if (loanProposal == null) {
+            return null;
+        }
+        long version = loanProposal.getVersion() == null ? 0L : loanProposal.getVersion();
+        return new LoanProposalApprovedEvent(
+                loanProposal.id(),
+                loanProposal.getLoanProposalId(),
+                loanProposal.getProposalNumber(),
+                loanProposal.getBranchId(),
+                loanProposal.getMemberId(),
+                loanProposal.getLoanProposalStatus(),
+                loanProposal.getStatus(),
+                approvedBy,
+                java.time.LocalDateTime.now(),
                 version,
                 loanProposal.getTracerId()
         );
