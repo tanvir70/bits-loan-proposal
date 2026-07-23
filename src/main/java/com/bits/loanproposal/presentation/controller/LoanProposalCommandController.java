@@ -3,10 +3,12 @@ package com.bits.loanproposal.presentation.controller;
 import com.bits.ddd.infra.core.bus.CommandBus;
 import com.bits.ddd.shared.dto.ApiResponse;
 import com.bits.loanproposal.application.command.BulkApproveLoanProposalsCommand;
+import com.bits.loanproposal.application.command.BulkCreateLoanProposalsCommand;
 import com.bits.loanproposal.application.command.CreateLoanProposalCommand;
 import com.bits.loanproposal.application.command.DeleteLoanProposalCommand;
 import com.bits.loanproposal.application.mapper.LoanProposalCommandMapper;
 import com.bits.loanproposal.presentation.controller.dto.BulkApproveLoanProposalRequestDto;
+import com.bits.loanproposal.presentation.controller.dto.BulkCreateLoanProposalRequestDto;
 import com.bits.loanproposal.presentation.controller.dto.CreateLoanProposalRequestDto;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -36,9 +38,24 @@ public class LoanProposalCommandController {
             tracerId = UUID.randomUUID().toString();
         }
 
-        CreateLoanProposalCommand command = commandMapper.toCreateCommand(tracerId,
+        CreateLoanProposalCommand createLoanProposalCommand = commandMapper.toCreateCommand(tracerId,
                 createLoanProposalRequestDto);
-        commandBus.handle(command);
+        commandBus.handle(createLoanProposalCommand);
+
+        return successResponse(HttpStatus.CREATED, tracerId);
+    }
+
+    @PostMapping(LOAN_PROPOSALS_BULK_CREATE)
+    public ResponseEntity<ApiResponse<Void>> bulkCreateLoanProposals(
+            @RequestAttribute(name = "trace_id", required = false) String tracerId,
+            @Valid @RequestBody BulkCreateLoanProposalRequestDto bulkCreateLoanProposalRequestDto) {
+
+        if (tracerId == null) {
+            tracerId = UUID.randomUUID().toString();
+        }
+
+        BulkCreateLoanProposalsCommand bulkCreateLoanProposalsCommand = commandMapper.toBulkCreateCommand(tracerId, bulkCreateLoanProposalRequestDto);
+        commandBus.handle(bulkCreateLoanProposalsCommand);
 
         return successResponse(HttpStatus.CREATED, tracerId);
     }
@@ -68,15 +85,15 @@ public class LoanProposalCommandController {
             @RequestAttribute(name = "trace_id", required = false) String tracerId,
             @RequestAttribute(name = "user_id", required = false) String approvedBy,
             @RequestHeader(name = "user_id", required = false) String approvedByHeader,
-            @Valid @RequestBody BulkApproveLoanProposalRequestDto request) {
+            @Valid @RequestBody BulkApproveLoanProposalRequestDto bulkApproveLoanProposalRequestDto) {
 
         if (tracerId == null) {
             tracerId = UUID.randomUUID().toString();
         }
 
-        BulkApproveLoanProposalsCommand command = commandMapper.toBulkApproveCommand(
-                tracerId, request, resolveUserId(approvedBy, approvedByHeader));
-        commandBus.handle(command);
+        BulkApproveLoanProposalsCommand bulkApproveLoanProposalsCommand = commandMapper.toBulkApproveCommand(
+                tracerId, bulkApproveLoanProposalRequestDto, resolveUserId(approvedBy, approvedByHeader));
+        commandBus.handle(bulkApproveLoanProposalsCommand);
 
         return successResponse(HttpStatus.ACCEPTED, tracerId);
     }
