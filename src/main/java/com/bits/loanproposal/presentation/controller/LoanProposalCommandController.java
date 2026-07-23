@@ -78,12 +78,13 @@ public class LoanProposalCommandController {
     public ResponseEntity<ApiResponse<Void>> bulkApproveLoanProposals(
             @RequestAttribute(name = "trace_id", required = false) String tracerId,
             @RequestAttribute(name = "user_id", required = false) String approvedBy,
+            @RequestHeader(name = "user_id", required = false) String approvedByHeader,
             @Valid @RequestBody BulkApproveLoanProposalRequestDto bulkApproveLoanProposalRequestDto) {
 
         tracerId = resolveTracerId(tracerId);
 
         BulkApproveLoanProposalsCommand bulkApproveLoanProposalsCommand = commandMapper.toBulkApproveCommand(
-                tracerId, bulkApproveLoanProposalRequestDto, approvedBy);
+                tracerId, bulkApproveLoanProposalRequestDto, resolveUserId(approvedBy, approvedByHeader));
         commandBus.handle(bulkApproveLoanProposalsCommand);
 
         return successResponse(HttpStatus.ACCEPTED, tracerId);
@@ -95,5 +96,9 @@ public class LoanProposalCommandController {
 
     private String resolveTracerId(String tracerId) {
         return tracerId == null ? UUID.randomUUID().toString() : tracerId;
+    }
+
+    private String resolveUserId(String userIdAttribute, String userIdHeader) {
+        return userIdAttribute != null && !userIdAttribute.isBlank() ? userIdAttribute : userIdHeader;
     }
 }
