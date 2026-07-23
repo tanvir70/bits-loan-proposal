@@ -28,14 +28,14 @@ public class UpdateLoanProposalCommandHandler implements CommandHandler<UpdateLo
 
     @Override
     @Transactional
-    public void handle(UpdateLoanProposalCommand command) {
-        LoanProposal loanProposal = queryService.fetchByIdOrHandleFailure(command.getId(), command.getTracerId());
-        SourceDataContext sourceDataContext = sourceDataProvider.provide(command, loanProposal);
+    public void handle(UpdateLoanProposalCommand updateLoanProposalCommand) {
+        LoanProposal loanProposal = queryService.fetchByIdOrHandleFailure(updateLoanProposalCommand.getId(), updateLoanProposalCommand.getTracerId());
+        SourceDataContext sourceDataContext = sourceDataProvider.provide(updateLoanProposalCommand, loanProposal);
         LoanProposalSourceData sourceData = LoanProposalSourceDataMapper.toSourceData(sourceDataContext);
-        LoanProposalUpdateData updateData = dataMapper.toUpdateData(command, sourceData);
+        LoanProposalUpdateData updateData = dataMapper.toUpdateData(updateLoanProposalCommand, sourceData);
 
         loanProposal.update(updateData);
 
-        aggregateService.save(loanProposal);
+        aggregateService.update(loanProposal);
     }
 }

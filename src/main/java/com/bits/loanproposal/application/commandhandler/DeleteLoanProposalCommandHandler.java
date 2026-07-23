@@ -29,6 +29,6 @@ public class DeleteLoanProposalCommandHandler implements CommandHandler<DeleteLo
 
         loanProposal.delete(loanProposalDeletionData);
 
-        aggregateService.save(loanProposal);
+        aggregateService.update(loanProposal);
     }
 }

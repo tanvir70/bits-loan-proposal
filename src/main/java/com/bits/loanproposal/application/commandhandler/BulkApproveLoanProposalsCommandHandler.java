@@ -30,13 +30,13 @@ public class BulkApproveLoanProposalsCommandHandler implements CommandHandler<Bu
 
     @Override
     @Transactional
-    public void handle(BulkApproveLoanProposalsCommand command) {
+    public void handle(BulkApproveLoanProposalsCommand bulkApproveLoanProposalsCommand) {
         Map<String, LocalizedMessage> errors = new LinkedHashMap<>();
 
-        validateApprover(command, errors);
-        validateRequestedIds(command, errors);
+        validateApprover(bulkApproveLoanProposalsCommand, errors);
+        validateRequestedIds(bulkApproveLoanProposalsCommand, errors);
 
-        Set<String> uniqueIds = command.getLoanProposalIds() == null ? Set.of() : new LinkedHashSet<>(command.getLoanProposalIds());
+        Set<String> uniqueIds = bulkApproveLoanProposalsCommand.getLoanProposalIds() == null ? Set.of() : new LinkedHashSet<>(bulkApproveLoanProposalsCommand.getLoanProposalIds());
 
         List<LoanProposal> loanProposals = fetchAndValidate(uniqueIds, errors);
 
@@ -45,11 +45,11 @@ public class BulkApproveLoanProposalsCommandHandler implements CommandHandler<Bu
         }
 
         loanProposals.forEach(loanProposal ->
-                loanProposal.approve(command.getTracerId(), command.getApprovedBy()));
+                loanProposal.approve(bulkApproveLoanProposalsCommand.getTracerId(), bulkApproveLoanProposalsCommand.getApprovedBy()));
 
         log.info("Bulk approving {} loan proposals, traceId={}, approvedBy={}",
-                loanProposals.size(), command.getTracerId(), command.getApprovedBy());
-        aggregateService.saveAll(loanProposals);
+                loanProposals.size(), bulkApproveLoanProposalsCommand.getTracerId(), bulkApproveLoanProposalsCommand.getApprovedBy());
+        aggregateService.updateAll(loanProposals);
     }
 
     private void validateApprover(BulkApproveLoanProposalsCommand command, Map<String, LocalizedMessage> errors) {
