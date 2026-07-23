@@ -34,9 +34,7 @@ public class LoanProposalCommandController {
             @RequestAttribute(name = "trace_id", required = false) String tracerId,
             @Valid @RequestBody CreateLoanProposalRequestDto createLoanProposalRequestDto) {
 
-        if (tracerId == null) {
-            tracerId = UUID.randomUUID().toString();
-        }
+        tracerId = resolveTracerId(tracerId);
 
         CreateLoanProposalCommand createLoanProposalCommand = commandMapper.toCreateCommand(tracerId,
                 createLoanProposalRequestDto);
@@ -50,9 +48,7 @@ public class LoanProposalCommandController {
             @RequestAttribute(name = "trace_id", required = false) String tracerId,
             @Valid @RequestBody BulkCreateLoanProposalRequestDto bulkCreateLoanProposalRequestDto) {
 
-        if (tracerId == null) {
-            tracerId = UUID.randomUUID().toString();
-        }
+        tracerId = resolveTracerId(tracerId);
 
         BulkCreateLoanProposalsCommand bulkCreateLoanProposalsCommand = commandMapper.toBulkCreateCommand(tracerId, bulkCreateLoanProposalRequestDto);
         commandBus.handle(bulkCreateLoanProposalsCommand);
@@ -66,9 +62,7 @@ public class LoanProposalCommandController {
             @RequestAttribute(name = "user_id", required = false) String deletedBy,
             @PathVariable Long branchId, @PathVariable String id) {
 
-        if (tracerId == null) {
-            tracerId = UUID.randomUUID().toString();
-        }
+        tracerId = resolveTracerId(tracerId);
         if (deletedBy == null || deletedBy.isBlank()) {
             deletedBy = "system";
         }
@@ -84,15 +78,12 @@ public class LoanProposalCommandController {
     public ResponseEntity<ApiResponse<Void>> bulkApproveLoanProposals(
             @RequestAttribute(name = "trace_id", required = false) String tracerId,
             @RequestAttribute(name = "user_id", required = false) String approvedBy,
-            @RequestHeader(name = "user_id", required = false) String approvedByHeader,
             @Valid @RequestBody BulkApproveLoanProposalRequestDto bulkApproveLoanProposalRequestDto) {
 
-        if (tracerId == null) {
-            tracerId = UUID.randomUUID().toString();
-        }
+        tracerId = resolveTracerId(tracerId);
 
         BulkApproveLoanProposalsCommand bulkApproveLoanProposalsCommand = commandMapper.toBulkApproveCommand(
-                tracerId, bulkApproveLoanProposalRequestDto, resolveUserId(approvedBy, approvedByHeader));
+                tracerId, bulkApproveLoanProposalRequestDto, approvedBy);
         commandBus.handle(bulkApproveLoanProposalsCommand);
 
         return successResponse(HttpStatus.ACCEPTED, tracerId);
@@ -102,7 +93,7 @@ public class LoanProposalCommandController {
         return ResponseEntity.ok(ApiResponse.success(null, ACCEPTED, status.value(), tracerId));
     }
 
-    private String resolveUserId(String userIdAttribute, String userIdHeader) {
-        return userIdAttribute != null && !userIdAttribute.isBlank() ? userIdAttribute : userIdHeader;
+    private String resolveTracerId(String tracerId) {
+        return tracerId == null ? UUID.randomUUID().toString() : tracerId;
     }
 }

@@ -22,6 +22,7 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDate;
 import java.util.Map;
 
+import static com.bits.loanproposal.application.constant.CommandHandlerErrorConstant.BUSINESS_DATE_NOT_AVAILABLE;
 import static com.bits.loanproposal.domain.constant.DomainErrorConstant.ALREADY_EXISTS;
 import static com.bits.loanproposal.domain.constant.DomainErrorConstant.LOAN_PROPOSAL_ALREADY_EXISTS;
 
@@ -49,7 +50,7 @@ public class CreateLoanProposalCommandHandler implements CommandHandler<CreateLo
         LocalDate applicationDate = loanProposalDataMapper.deriveApplicationDate(sourceData);
         if (applicationDate == null) {
             Map<String, LocalizedMessage> errors = Map.of("applicationDate",
-                    LocalizedMessage.builder().key("BUSINESS_DATE_NOT_AVAILABLE").build());
+                    LocalizedMessage.builder().key(BUSINESS_DATE_NOT_AVAILABLE).build());
             throw new LoanProposalValidationException(errors);
         }
 

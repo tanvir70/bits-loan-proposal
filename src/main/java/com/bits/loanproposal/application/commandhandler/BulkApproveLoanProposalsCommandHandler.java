@@ -14,18 +14,16 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+
+import static com.bits.loanproposal.application.constant.CommandHandlerErrorConstant.*;
 
 @Slf4j
 @Service
 @RegisterCommandHandler
 @RequiredArgsConstructor
 public class BulkApproveLoanProposalsCommandHandler implements CommandHandler<BulkApproveLoanProposalsCommand> {
-
-    private static final String APPROVER_REQUIRED = "APPROVER_REQUIRED";
-    private static final String LOAN_PROPOSAL_NOT_FOUND = "LOAN_PROPOSAL_NOT_FOUND";
-    private static final String LOAN_PROPOSAL_ID_REQUIRED = "LOAN_PROPOSAL_ID_REQUIRED";
-    private static final String LOAN_PROPOSAL_IDS_REQUIRED = "LOAN_PROPOSAL_IDS_REQUIRED";
-    private static final String LOAN_PROPOSAL_APPROVAL_NOT_ALLOWED = "LOAN_PROPOSAL_APPROVAL_NOT_ALLOWED";
 
     private final LoanProposalRepository loanProposalRepository;
     private final AggregateService<LoanProposal, String> aggregateService;
@@ -68,6 +66,7 @@ public class BulkApproveLoanProposalsCommandHandler implements CommandHandler<Bu
 
     private List<LoanProposal> fetchAndValidate(Set<String> loanProposalIds, Map<String, LocalizedMessage> errors) {
         List<LoanProposal> loanProposals = new ArrayList<>();
+        List<String> validIds = new ArrayList<>();
 
         for (String id : loanProposalIds) {
             if (id == null || id.isBlank()) {
@@ -75,9 +74,24 @@ public class BulkApproveLoanProposalsCommandHandler implements CommandHandler<Bu
                 continue;
             }
 
-            loanProposalRepository.findById(id)
-                    .ifPresentOrElse(loanProposal -> validateEligibility(loanProposal, errors, loanProposals),
-                            () -> errors.put(id, LocalizedMessage.builder().key(LOAN_PROPOSAL_NOT_FOUND).build()));
+            validIds.add(id);
+        }
+
+        if (validIds.isEmpty()) {
+            return loanProposals;
+        }
+
+        Map<String, LoanProposal> loanProposalById = loanProposalRepository.findByIdList(validIds).stream()
+                .collect(Collectors.toMap(LoanProposal::id, Function.identity()));
+
+        for (String id : validIds) {
+            LoanProposal loanProposal = loanProposalById.get(id);
+            if (loanProposal == null) {
+                errors.put(id, LocalizedMessage.builder().key(LOAN_PROPOSAL_NOT_FOUND).build());
+                continue;
+            }
+
+            validateEligibility(loanProposal, errors, loanProposals);
         }
 
         return loanProposals;

@@ -24,6 +24,10 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDate;
 import java.util.*;
 
+import static com.bits.loanproposal.application.constant.CommandHandlerErrorConstant.BUSINESS_DATE_NOT_AVAILABLE;
+import static com.bits.loanproposal.application.constant.CommandHandlerErrorConstant.DUPLICATE_LOAN_PROPOSAL_ID;
+import static com.bits.loanproposal.application.constant.CommandHandlerErrorConstant.LOAN_PROPOSAL_ID_REQUIRED;
+import static com.bits.loanproposal.application.constant.CommandHandlerErrorConstant.LOAN_PROPOSALS_REQUIRED;
 import static com.bits.loanproposal.domain.constant.DomainErrorConstant.LOAN_PROPOSAL_ALREADY_EXISTS;
 
 @Slf4j
@@ -31,11 +35,6 @@ import static com.bits.loanproposal.domain.constant.DomainErrorConstant.LOAN_PRO
 @RegisterCommandHandler
 @RequiredArgsConstructor
 public class BulkCreateLoanProposalsCommandHandler implements CommandHandler<BulkCreateLoanProposalsCommand> {
-
-    private static final String BUSINESS_DATE_NOT_AVAILABLE = "BUSINESS_DATE_NOT_AVAILABLE";
-    private static final String LOAN_PROPOSAL_ID_REQUIRED = "LOAN_PROPOSAL_ID_REQUIRED";
-    private static final String LOAN_PROPOSALS_REQUIRED = "LOAN_PROPOSALS_REQUIRED";
-    private static final String DUPLICATE_LOAN_PROPOSAL_ID = "DUPLICATE_LOAN_PROPOSAL_ID";
 
     private final AggregateService<LoanProposal, String> aggregateService;
     private final LoanProposalSourceDataProvider sourceDataProvider;
